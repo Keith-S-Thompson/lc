@@ -1,0 +1,407 @@
+Newsgroups: comp.sources.misc
+From: kent@sparky.sterling.com (Kent Landfield)
+Subject:  v31i090:  lc - Categorize and List Files In Columns, Patch01
+Message-ID: <1992Aug20.165246.22059@sparky.imd.sterling.com>
+X-Md4-Signature: fdc7d37c4f6af7e179ff93a9a695cc40
+Date: Thu, 20 Aug 1992 16:52:46 GMT
+Approved: kent@sparky.imd.sterling.com
+
+Submitted-by: kent@sparky.sterling.com (Kent Landfield)
+Posting-number: Volume 31, Issue 90
+Archive-name: lc/patch01
+Environment: UNIX, AmigaDOS, MINIX, Coherent, Cray
+Patch-To: lc: Volume 31, Issue 72-73
+
+This patch to lc fixes two symbolic link problems that I let slip in, cleans
+up compilation on a couple platforms and cleans up the makefile a bit.
+
+lc is much like the ls command except it separates the types of files into 
+groups and then displays located filenames to the user is a columnar fashion. 
+lc has incorporated minimal spell checking and transparently uses CDPATH to
+locate requested files that are not at the specified location or within the
+local directory. 
+
+I'd like to publically thank those who contributed to this patch.
+
+	James Cummings <james@homey.lonestar.org>
+        Randy Coulman <coulman@skdad.usask.ca>
+        Al Lilianstrom <alfredl@dcdsv0.fnal.gov>
+        Bjorn Nordgren <bcn@lulea.trab.se>
+        Marty Leisner <leisner@eso.mc.xerox.com>
+        Jeff Minnig <dsndata!jeff@sparky.sterling.com>
+
+I would also like to thank Scott Bolte <scott@craycos.com> who took me up
+on my request to port lc to a Cray.   Thanks all!
+
+			-Kent+
+--------------
+diff -cr ../lc2.0/History ./History
+*** ../lc2.0/History	Thu Aug 20 11:21:46 1992
+--- ./History	Thu Aug 20 10:45:27 1992
+***************
+*** 1,5 ****
+  #
+! # @(#)History	1.2 8/6/92
+  #
+  #  This file is a running history of the lc command.
+  #
+--- 1,5 ----
+  #
+! # @(#)History	1.3 8/20/92
+  #
+  #  This file is a running history of the lc command.
+  #
+***************
+*** 56,58 ****
+--- 56,60 ----
+            added the ability to display file which are inaccessible,
+            added the ability to display only those files accessible by the user,
+            added spell checking to the CDPATH.  Fantastic additions Jonathan!!
++ 
++       - Scott Bolte ported it to a Cray running CSOS.  
+diff -cr ../lc2.0/lc.1 ./lc.1
+*** ../lc2.0/lc.1	Thu Aug 20 11:21:46 1992
+--- ./lc.1	Thu Aug 20 10:45:25 1992
+***************
+*** 1,4 ****
+! .\" @(#)lc.1	1.7 8/7/92 Kent Landfield;
+  .TH LC 1 "Usenet Source"
+  .SH NAME
+  .B lc 
+--- 1,4 ----
+! .\" @(#)lc.1	1.8 8/20/92 Kent Landfield;
+  .TH LC 1 "Usenet Source"
+  .SH NAME
+  .B lc 
+***************
+*** 170,172 ****
+--- 170,174 ----
+  .PP
+  Jonathan Bayer <jbayer@ispi.com> added several features, including the 
+  options -C -i -x -X and added spell checking to CDPATH usage.  Thanks Jonathan!
++ .PP
++ Scott Bolte <scott@craycos.com> ported lc to a Cray running CSOS. 
+diff -cr ../lc2.0/lc.c ./lc.c
+*** ../lc2.0/lc.c	Thu Aug 20 11:21:51 1992
+--- ./lc.c	Thu Aug 20 10:45:27 1992
+***************
+*** 62,68 ****
+  ** on your system ? Options -s, -L or -l won't be available..)
+  **
+  */
+! static char *sccsid = "@(#)lc.c	1.34 8/7/92  Kent Landfield";
+  #include "patchlevel.h"
+  
+  #include <stdio.h>
+--- 62,68 ----
+  ** on your system ? Options -s, -L or -l won't be available..)
+  **
+  */
+! static char *sccsid = "@(#)lc.c	1.35 8/20/92 Kent Landfield";
+  #include "patchlevel.h"
+  
+  #include <stdio.h>
+***************
+*** 285,301 ****
+--- 285,312 ----
+      extern int  geteuid();
+      extern int  getegid();
+  # else
++ #  ifndef _STDIO_H
+      extern int  sprintf();
++ #  endif
+      extern void free();
+      extern void qsort();
++ #  ifdef SYSV
++     extern unsigned short getuid();
++     extern unsigned short geteuid();
++     extern unsigned short getgid();
++     extern unsigned short getegid();
++ #  else /*!SYSV*/
+      extern uid_t getuid();
+      extern uid_t geteuid();
+      extern gid_t getgid();
+      extern gid_t getegid();
++ #  endif
+  # endif
++ # ifndef _STDIO_H
+   extern int fprintf();
+   extern int printf();
+   extern int sscanf();
++ # endif
+  #endif
+  
+  void lc();
+***************
+*** 502,508 ****
+           prt_limit = (Screen_width - 4) / (Maxlen + 1);
+  
+           /*  sort by columns */
+! #ifdef LNK_ONLY
+           if (Sort_down && Current != LNK_ONLY) {
+  #else       
+           if (Sort_down) {
+--- 513,519 ----
+           prt_limit = (Screen_width - 4) / (Maxlen + 1);
+  
+           /*  sort by columns */
+! #ifdef S_IFLNK
+           if (Sort_down && Current != LNK_ONLY) {
+  #else       
+           if (Sort_down) {
+***************
+*** 525,531 ****
+                         *frmt++ = *(*(files->names + ind) + i);
+                     i++;
+                } while (i <= Maxlen);
+! #ifdef LNK_ONLY
+                if (Sort_down && Current != LNK_ONLY)
+  #else       
+                if (Sort_down)
+--- 536,542 ----
+                         *frmt++ = *(*(files->names + ind) + i);
+                     i++;
+                } while (i <= Maxlen);
+! #ifdef S_IFLNK
+                if (Sort_down && Current != LNK_ONLY)
+  #else       
+                if (Sort_down)
+***************
+*** 596,602 ****
+  
+      /* sort by columns */
+      Maxlen++; /* this is to force an extra space between columns */
+! #ifdef LNK_ONLY
+      if (Sort_down && Current != LNK_ONLY) {
+  #else
+      if (Sort_down) {
+--- 607,613 ----
+  
+      /* sort by columns */
+      Maxlen++; /* this is to force an extra space between columns */
+! #ifdef S_IFLNK
+      if (Sort_down && Current != LNK_ONLY) {
+  #else
+      if (Sort_down) {
+***************
+*** 639,649 ****
+          ssing = Single;
+          Single = TRUE;
+          Current = LNK_ONLY;
+! #ifdef NOTDEF
+!         flag = pr_info("Symbolic Links: ", &Lnks, flag, 0);
+! #else
+!         flag = pr_info("Symbolic Links: ", &Lnks, flag, Sort_wanted);
+! #endif
+          Single = ssing;
+          Current = 0;
+      }
+--- 650,656 ----
+          ssing = Single;
+          Single = TRUE;
+          Current = LNK_ONLY;
+!         flag = pr_info("Symbolic Links: ", &Lnks, flag, FALSE);
+          Single = ssing;
+          Current = 0;
+      }
+***************
+*** 1574,1580 ****
+          (void) strcpy(buf, *argv);
+  skipit:
+  #ifdef S_IFLNK
+-         lnk_found = 0;
+          if (lstat(buf, &sbuf) == -1) {
+              lnk_found = 1;
+  #else
+--- 1581,1586 ----
+***************
+*** 1593,1603 ****
+                  nl = TRUE;
+                  goto skipit;
+              }
+- #ifdef S_IFLNK
+-             else if (lnk_found) 
+-                 (void) fprintf(stderr,"%s: %s: can't resolve symbolic link\n",
+-                                Progname, *argv);
+- #endif 
+              else 
+                  (void)fprintf(stderr, "%s: can't find %s\n",
+                                Progname, *argv);
+--- 1599,1604 ----
+diff -cr ../lc2.0/lc.mk ./lc.mk
+*** ../lc2.0/lc.mk	Thu Aug 20 11:21:47 1992
+--- ./lc.mk	Thu Aug 20 10:45:24 1992
+***************
+*** 1,5 ****
+  #
+! #    "@(#)lc.mk	1.10 8/6/92 
+  #
+  #  Copyright (c) 1984, 1985, 1986, 1987, 1988, 1989, 1990,
+  #                1991, 1992 by Kent Landfield.
+--- 1,5 ----
+  #
+! #    "@(#)lc.mk	1.11 8/20/92 
+  #
+  #  Copyright (c) 1984, 1985, 1986, 1987, 1988, 1989, 1990,
+  #                1991, 1992 by Kent Landfield.
+***************
+*** 12,26 ****
+  #  Have a favorite C compiler that is not cc... Too bad. ;-)
+  CC=cc
+  #CC=gcc
+! #
+  # Specify the multiple of 512 that your du(1) reports blocksizes System V 
+  # du(1) gives the number of 512 byte blocks while BSD specifies kilobytes.
+  #RPTSIZ = -DBLK_MULTIPLE=1
+  RPTSIZ = -DBLK_MULTIPLE=2
+  
+  # If you want to specify the block size here uncomment the following line:
+  #BLKSIZE = -DBLOCKSIZE=512
+! #
+  # If you are running on a BSD 4.2 box:
+  # (note - if compiling on a sequent in att environment...`ucb make -f lc.mk`)
+  # FLAGS = -DBSD -DDIRECT
+--- 12,32 ----
+  #  Have a favorite C compiler that is not cc... Too bad. ;-)
+  CC=cc
+  #CC=gcc
+! 
+! # The number of columns displayed is be computed on a file type basis or by 
+! # the length of the longest element in any type category. By defining the
+! # LENS flag, the computation will be type independent.
+! LENGTH=-DLENS
+! 
+  # Specify the multiple of 512 that your du(1) reports blocksizes System V 
+  # du(1) gives the number of 512 byte blocks while BSD specifies kilobytes.
+  #RPTSIZ = -DBLK_MULTIPLE=1
+  RPTSIZ = -DBLK_MULTIPLE=2
++ #RPTSIZ = -DBLK_MULTIPLE=8
+  
+  # If you want to specify the block size here uncomment the following line:
+  #BLKSIZE = -DBLOCKSIZE=512
+! 
+  # If you are running on a BSD 4.2 box:
+  # (note - if compiling on a sequent in att environment...`ucb make -f lc.mk`)
+  # FLAGS = -DBSD -DDIRECT
+***************
+*** 27,38 ****
+  #         or
+  #
+  # If you are running on a BSD (4.3 or later), SunOS (4.0 or later),
+! # or Ultrix (3.0 or later) box:
+! FLAGS = -DBSD -DLENS
+! #
+! # FLAGS = -DBSD
+  #         or
+  #
+  # If you are running on an Ultrix box and using the POSIX environment:
+  # FLAGS = -DPOSIX
+  #         or
+--- 33,48 ----
+  #         or
+  #
+  # If you are running on a BSD (4.3 or later), SunOS (4.0 or later),
+! # HPUX or Ultrix (3.0 or later) box:
+! FLAGS = -DBSD
+  #         or
+  #
++ # If you are running Silicon Graphics such as the SGI Personal Iris:
++ # FLAGS = -DPOSIX -cckr
++ #
++ # If you are running on a Cray under CSOS: (and set RPTSIZ to 8)
++ # FLAGS = -DPOSIX
++ #
+  # If you are running on an Ultrix box and using the POSIX environment:
+  # FLAGS = -DPOSIX
+  #         or
+***************
+*** 52,58 ****
+  #         or
+  #
+  # If you are running System V with Doug Gwyn's directory routines
+! # or Silicon Graphics or Utek 3.2d:
+  # FLAGS = -DPOSIX
+  # 
+  #
+--- 62,68 ----
+  #         or
+  #
+  # If you are running System V with Doug Gwyn's directory routines
+! # or Utek 3.2d:
+  # FLAGS = -DPOSIX
+  # 
+  #
+***************
+*** 67,83 ****
+  # LDFLAGS = -lndir
+  # LDFLAGS = -lc_s
+  LDFLAGS = 
+  #
+  # 'qsort' function in C library
+  # QSORTO =
+  # QSORTC =
+  #
+! # 'qsort' function not in C library Or Your qsort library
+  # function is slooow.
+  #
+  # QSORTO = qsort.o
+  # QSORTC = qsort.c
+! #
+  # Installation ownership and directory. Customize
+  # for your installation. Warning, if you do not
+  # install this on your root partition, it will
+--- 77,94 ----
+  # LDFLAGS = -lndir
+  # LDFLAGS = -lc_s
+  LDFLAGS = 
++ 
+  #
+  # 'qsort' function in C library
+  # QSORTO =
+  # QSORTC =
+  #
+! # 'qsort' function not in C library Or your qsort library
+  # function is slooow.
+  #
+  # QSORTO = qsort.o
+  # QSORTC = qsort.c
+! 
+  # Installation ownership and directory. Customize
+  # for your installation. Warning, if you do not
+  # install this on your root partition, it will
+***************
+*** 95,102 ****
+  OWNER=bin
+  GROUP=bin
+  
+! CFLAGS = $(OPTIM) $(FLAGS) $(BLKSIZE) $(RPTSIZ)
+! LINTFLAGS = $(FLAGS) $(BLKSIZE) $(RPTSIZ)
+  SRCS = lc.c $(QSORTC)
+  OBJS = lc.o $(QSORTO)
+  
+--- 106,113 ----
+  OWNER=bin
+  GROUP=bin
+  
+! CFLAGS = $(OPTIM) $(FLAGS) $(BLKSIZE) $(RPTSIZ) $(LENGTH)
+! LINTFLAGS = $(FLAGS) $(BLKSIZE) $(RPTSIZ) $(LENGTH)
+  SRCS = lc.c $(QSORTC)
+  OBJS = lc.o $(QSORTO)
+  
+diff -cr ../lc2.0/patchlevel.h ./patchlevel.h
+*** ../lc2.0/patchlevel.h	Thu Aug 20 11:21:48 1992
+--- ./patchlevel.h	Thu Aug 20 10:45:24 1992
+***************
+*** 1,5 ****
+  /*
+! **    @(#)patchlevel.h	1.1 8/2/92
+  */
+  #define RELEASE 2
+! #define PATCHLEVEL 0
+--- 1,5 ----
+  /*
+! **    @(#)patchlevel.h	1.2 8/19/92
+  */
+  #define RELEASE 2
+! #define PATCHLEVEL 1
+exit 0 # Just in case...

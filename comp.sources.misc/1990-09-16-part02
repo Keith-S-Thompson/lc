@@ -1,0 +1,202 @@
+Path: gmdzi!unido!mcsun!uunet!allbery
+From: k...@sparky.IMD.Sterling.COM (Kent Landfield)
+Newsgroups: comp.sources.misc
+Subject: v14i083: lc - Categorize and List Files In Columns, Part 2 of 2
+Message-ID: <104984@uunet.UU.NET>
+Date: 16 Sep 90 00:55:42 GMT
+Sender: allb...@uunet.UU.NET
+Lines: 190
+Approved: allb...@uunet.UU.NET (Brandon S. Allbery - comp.sources.misc)
+Posted: Sun Sep 16 01:55:42 1990
+X-UNIX-From: ssbell!sparky!kent
+
+Posting-number: Volume 14, Issue 83
+Submitted-by: k...@sparky.IMD.Sterling.COM (Kent Landfield)
+Archive-name: lc/part02
+
+#! /bin/sh
+# This is a shell archive.  Remove anything before this line, then feed it
+# into a shell via "sh file" or similar.  To overwrite existing files,
+# type "sh file -c".
+# The tool that generated this appeared in the comp.sources.unix newsgroup;
+# send mail to comp-sources-u...@uunet.uu.net if you want that tool.
+# If this archive is complete, you will see the following message at the end:
+#		"End of archive 2 (of 2)."
+# Contents:  lc.1
+# Wrapped by kent@sparky on Fri Sep  7 16:10:04 1990
+PATH=/bin:/usr/bin:/usr/ucb ; export PATH
+if test -f 'lc.1' -a "${1}" != "-c" ; then 
+  echo shar: Will not clobber existing file \"'lc.1'\"
+else
+echo shar: Extracting \"'lc.1'\" \(4966 characters\)
+sed "s/^X//" >'lc.1' <<'END_OF_FILE'
+X.\" @(#)lc.1	1.1 9/7/90 Kent Landfield;
+X.TH LC 1 "Usenet Source"
+X.SH NAME
+X.B lc 
+X\- categorize and list directory and file names in columns
+X.SH SYNOPSIS
+X.B lc
+X[
+X.B \-abcdDefFIlLmMrsS1
+X]
+X[ directory ... ]
+X.SH DESCRIPTION
+X.B lc
+Xlists the elements of the given directories.  The elements are
+Xdivided into minimally five basic types (files, directories, 
+Xcharacter special files, block special files, and fifos) and 
+Xare printed in alphabetical order.  They are normally printed 
+Xcolumn-wise across the screen, preceded by a title indicating
+Xthe type. The
+X.B \-1
+Xoption can be used to force single-column untitled output.
+X.PP
+X.B lc
+Xuses the environment variables
+X.B LC
+X,
+X.B CDPATH 
+Xand
+X.B COLS 
+Xto allow you to set up a default set of display options that
+X.B lc
+Xshould use each time is it run. Options on the command line override
+Xoptions specified in the environment if there is a conflict.
+X.B LC
+Xis used to set 
+X.B lc
+Xspecific options. All command line options shown in the option list 
+Xbelow can be used in setting default options within the environment 
+Xvariable 
+X.B LC.
+X.B CDPATH 
+Xis searched for a file not found at the requested location or
+Xin the current directory. This is an extremely handy feature of 
+X.B lc.
+X.B COLS 
+Xis used to switch the column width between 80 and 132 column display.
+X.PP
+X.B lc 
+Xhas incorporated the minimal the spell checking routines found in the book,
+XThe UNIX Programming Environment, by Brian Kernighan and Rob Pike.  
+X.PP
+XIf the command line argument list contains more than one name, the 
+Xcontents of the directories named in the list are displayed and all 
+Xother names are displayed one per line with the type of the file 
+Xdisplayed on the same line. If the 
+X.B -D 
+Xoption is supplied in the environment or on the command line all 
+Xnon-directory files are ignored.  If no file or directory is specified the 
+Xcurrent working directory is listed by default.  The special entries
+X``.'' and ``..'' are not listed.
+X.PP
+XNot all options are supported on every system. (e.g. no symbolic links
+Xon your system ? Options 
+X.B -s, -I -L
+Xor 
+X.B -l
+Xwon't be available...) On systems which support symbolic links, 
+Xthe symbolic links are normally followed, and each prints under 
+Xthe category of the type of file to which it is linked.  If the 
+Xsymbolic link points to a nonexistent path name, or if you do not 
+Xhave permission to resolve the path name,
+X.B lc
+Xprints out an error message indicating it cannot resolve the link.
+XThis type of message can be suppressed through the use of the 
+X.B 'I'
+Xoption described below.
+X.SH OPTIONS
+X.IP "-a" 6
+XList dot files as well. Normally 
+X.B lc 
+Xdoes not display files beginning with a '.' unless this option is 
+Xspecified. The system '.' and '.. files are never displayed since
+Xthey give you no real additional information and would just clutter
+Xup the display.
+X.IP "-b"
+XList block special files only.
+X.IP "-c"
+XList character special files only.
+X.IP "-d"
+XList directories only.
+X.IP "-D"
+XDo not display singular files. If you do not use this option and
+Xexecute "lc /unix", your output will be "/unix: file". This is 
+Xuseful in shell scripts but is sometimes annoying if you execute
+Xa command such as "lc /usr/lib/*" and all you wish to see is the
+Xfirst level of directories and not a lot of "filename: file" messages.
+X.IP "-e"
+XMark executable files with '*'. This options allows you to have executables
+Xdisplayed with a '*' appended to the end of the file name.
+X.IP "-f"
+XList regular files only.
+X.IP "-F"
+XList fifo files only.
+X.IP "-I"
+XDo not report unresolved symbolic link messages. Normally
+X.B lc
+Xprints out a message stating that it cannot resolve the symbolic link.
+XUse of this option suppresses the display of those messages.
+X.IP "-l"
+XMark symbolic links with '@'. This options allows you to have symbolic
+Xlinks displayed with a '@' appended to the end of the file name.
+X.IP "-L"
+XDisplay symbolic links. This options allows you to have 
+X.B lc
+Xoutput a display showing what files the symbolic links refer to.
+X.IP "-m"
+XList shared memory name space entry files only.
+X.IP "-M"
+XList semaphore name space entry files only.
+X.IP "-r"
+XList the directory entries as they appear in the directory file. No 
+Xsorting of output prior to displaying.
+X.IP "-s"
+XList symbolic links only.
+X.IP "-S"
+XList AF_UNIX socket files only.
+X.IP "-1"
+XList files one per line instead of in columns.
+X.SH DIAGNOSTICS
+XThe "only" options can not be combined at this time.
+X.PP
+XThe spell checking does not work when the CDPATH is searched for a
+Xfile or directory not found in the current directory.
+X.PP
+X.B lc
+Xdoes not support recursion but I have never found this to
+Xbe that necessary to put in. 
+X.nr
+X      $ find directory-to-descend -type d -print | xargs lc
+X.nf
+Xworks just fine when recursion is needed.
+X.SH AUTHOR
+XKent Landfield <k...@sparky.IMD.Sterling.COM>
+X.SH CREDITS
+XJeff Minnig <jeff@dsndata> and Rick Ohnemus <r...@sparky.IMD.Sterling.COM> 
+Xwere a *great* help with this program at different stages of its development...
+XThanks!
+END_OF_FILE
+if test 4966 -ne `wc -c <'lc.1'`; then
+    echo shar: \"'lc.1'\" unpacked with wrong size!
+fi
+# end of 'lc.1'
+fi
+echo shar: End of archive 2 \(of 2\).
+cp /dev/null ark2isdone
+MISSING=""
+for I in 1 2 ; do
+    if test ! -f ark${I}isdone ; then
+	MISSING="${MISSING} ${I}"
+    fi
+done
+if test "${MISSING}" = "" ; then
+    echo You have unpacked both archives.
+    rm -f ark[1-9]isdone
+else
+    echo You still need to unpack the following archives:
+    echo "        " ${MISSING}
+fi
+##  End of shell archive.
+exit 0

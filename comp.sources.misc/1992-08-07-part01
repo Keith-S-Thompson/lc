@@ -1,0 +1,907 @@
+Newsgroups: comp.sources.misc
+From: kent@sparky.sterling.com (Kent Landfield)
+Subject:  v31i072:  lc - Categorize and List Files In Columns, Part01/02
+Message-ID: <csm-v31i072=lc.131250@sparky.IMD.Sterling.COM>
+X-Md4-Signature: 0557e8d2ae9abd3288cf9f2a29dccd86
+Date: Fri, 7 Aug 1992 18:27:49 GMT
+Approved: kent@sparky.imd.sterling.com
+
+Submitted-by: kent@sparky.sterling.com (Kent Landfield)
+Posting-number: Volume 31, Issue 72
+Archive-name: lc/part01
+Environment: UNIX, AmigaDOS, MINIX, Coherent
+Supersedes: lc: Volume 14, Issue 82-83
+
+lc is much like the ls command except it separates the types of files into 
+groups and then displays located filenames to the user is a columnar fashion. 
+
+lc has incorporated minimal spell checking for people who's fingers like to 
+transpose characters regularly like mine...
+
+lc uses three different environment variables COLS, CDPATH, and LC allowing 
+you to customize how you wish lc to perform on a default basis. 
+
+lc uses CDPATH to locate files that are requested but are not in the specified 
+location or within the local directory. This feature greatly reduces full path
+typing just to see the contents of a directory.
+
+COLS is used to switch the column width between 80 and 132 column displays.
+
+LC is used to set lc specific options. The options can be specified using LC 
+or supplied on the command line.  Command line supplied options override 
+options specified in the LC environment variable.
+
+ lc -- categorize files in a directory and list column-wise
+
+   Usage:       lc [ options ] [ directory ... ]
+
+   Options:
+        -a      List dot files as well
+        -b      List block special files only
+        -B      Display the size in blocks
+        -c      List character special files only
+        -C      Sort down the columns instead of across
+        -d      List directories only
+        -D      Do not display singular files
+        -e      Mark executable files with '*'
+        -f      List regular files only
+        -F      List fifo files only
+        -i      Display the inode number
+        -I      Suppress unresolved symbolic link messages
+        -l      Mark symbolic links with '@'
+        -L      Display symbolic links
+        -m      List shared memory name space entry files only
+        -M      List semaphore name space entry files only
+        -r      Do not sort the filenames before displaying
+        -s      List symbolic links only
+        -S      List socket file only
+        -v      Print the version of lc 
+        -x      Only display those files the user owns or has access to
+        -X      Only display those files the user does not own and does 
+                not have access to
+        -1      List files one per line instead of in columns
+
+   The "only" options can be combined.
+
+If there is no 'directory' specified, the current directory is used.
+
+Not all options are supported on every system. (e.g. no symbolic links on 
+your system ? Options -s, -I -L or -l won't be available..) If your system 
+does not support shared memory name space entry files, then you cannot use 
+the -m option...
+
+I'd like to publically thank those who helped improve lc during this
+release.  Thanks all!!!
+
+	Jonathan Bayer  <jbayer@ispi.com>
+	Tim Goodwin     <Tim.Goodwin@uknet.ac.uk>
+	Rick Ohnemus    <rick@sparky.imd.sterling.com>
+	Tom Rushworth   <uunet!tfic.bc.ca!tbr>
+
+I have had requests for lc on a Cray YMP/el.   Would anyone care to port lc 
+to the Cray ?  I will gladly incorporate the changes.  Sorry but I don't have 
+access to a Cray at the moment...
+
+			-Kent+
+----
+#! /bin/sh
+# This is a shell archive.  Remove anything before this line, then feed it
+# into a shell via "sh file" or similar.  To overwrite existing files,
+# type "sh file -c".
+# The tool that generated this appeared in the comp.sources.unix newsgroup;
+# send mail to comp-sources-unix@uunet.uu.net if you want that tool.
+# Contents:  README MANIFEST History lc.1 lc.mk patchlevel.h qsort.c
+# Wrapped by kent@sparky on Fri Aug  7 12:44:03 1992
+PATH=/bin:/usr/bin:/usr/ucb ; export PATH
+echo If this archive is complete, you will see the following message:
+echo '          "shar: End of archive 1 (of 2)."'
+if test -f 'README' -a "${1}" != "-c" ; then 
+  echo shar: Will not clobber existing file \"'README'\"
+else
+  echo shar: Extracting \"'README'\" \(4997 characters\)
+  sed "s/^X//" >'README' <<'END_OF_FILE'
+X
+X			LC
+X
+X                "@(#)README	1.8 8/7/92 Kent Landfield"
+X
+XThis directory contains the source to lc. lc is much like the ls 
+Xcommand except it separates the types of files into groups and then
+Xdisplays located file names to the user is a columnar fashion. 
+X
+X"lc"'s history goes back to 1978 when it was originally developed at the
+XUniversity of Waterloo on a Honeywell 66/60 system. It became so popular 
+Xthat it was ported to Waterloo's V7 Unix systems shortly thereafter.  
+XThis version is a complete re-implementation of lc and contains no 
+XUniversity of Waterloo code.
+X
+XThis version of lc was initially implemented by myself after I became 
+Xaccustomed to the lc command on a Mark Williams Coherent system I was 
+Xrunning back in 1984.  When I started moving to different systems I 
+Xfound that I did not like the lack of information, flexibility and the 
+Xgeneral display that ls provided.  I have found that I am not the only 
+Xone that has become fed up with ls and its jumbled output. All the 
+Xpeople here use lc much more than they use ls. It is a locally well 
+Xknown fact that when a new machine comes into the house, the first local 
+Xsoftware that is put on the machine is lc.  It is far from perfect but 
+Xit is better than ls on a general use basis. 
+X
+Xlc uses three different environment variables COLS, CDPATH, and LC
+Xallowing you to customize how you wish lc to perform on a default 
+Xbasis. COLS is used to switch the column width between 80 and 132 
+Xcolumn display.  LC is used to set lc specific options. The command 
+Xline options shown in the option list below are available to be used 
+Xin setting up how lc is to work for you. Options that you supply on 
+Xthe command line override options that are specified in the environment.
+Xlc uses CDPATH to locate files that are requested but are not in the 
+Xspecified location or within the local directory.
+X
+Xlc has incorporated minimal spell checking using slightly modified
+Xroutines found in the book, The UNIX Programming Environment, by 
+XBrian Kernighan and Rob Pike.
+X
+XThe following is a quick reference of options to lc. These options
+Xcan be specified in the Environment variable LC so that they are
+Xdone each time lc is executed.
+X
+X lc -- categorize files in a directory and list column-wise
+X
+X   Usage:       lc [ options ] [ directory ... ]
+X
+X   Options:
+X        -a      List dot files as well.
+X        -b      List block special files only
+X        -B      Display the size in blocks
+X        -c      List character special files only
+X        -C      Sort down the columns instead of across
+X        -d      List directories only
+X        -D      Do not display singular files
+X        -e      Mark executable files with '*'
+X        -f      List regular files only
+X        -F      List fifo files only
+X        -i      Display the inode number
+X        -I      Suppress unresolved symbolic link messages.
+X        -l      Mark symbolic links with '@'
+X        -L      Display symbolic links
+X        -m      List shared memory name space entry files only
+X        -M      List semaphore name space entry files only
+X        -r      Do not sort the filenames before displaying.
+X        -s      List symbolic links only
+X        -S      List socket file only
+X        -v      Print the version of lc 
+X        -x      Only display those files the user owns or has access to.
+X        -X      Only display those files the user does not own and does 
+X                not have access to.
+X        -1      List files one per line instead of in columns.
+X
+X  
+X   The "only" options can be combined.
+X
+X   If there is no 'directory' specified, the current directory is used.
+X
+X   Not all options are supported on every system. (e.g. no symbolic links
+X   on your system ? Options -s, -I -L or -l won't be available..)
+X   If your system does not support shared memory name space entry files, 
+X   then you cannot use the -m option...
+X
+XThe following is a todo list that may get done someday...
+X
+X1. Port to all flavors of unix on all platforms. Lofty goal but
+X   on-going... :-)
+X                                                        
+X                          *PLEASE!* 
+X
+XIf you have a problem, there's someone else out there who either has
+Xhad or will have the same problem.  Please send all "lc" ideas, patches, 
+Xetc to 
+X
+XINTERNET: kent@Sterling.COM or UUCP: uunet!sparky!kent
+X
+Xso that I can continue to improve the functionality and portability of lc.
+X
+XJust a note for historical interest: David Tanguay of Software Development 
+XGroup, University of Waterloo informs me that LC stands for "list catalog".
+XGCOS TSS on the Honeywell used the term "catalog", meaning (roughly) the
+Xsame thing as a Unix directory. The GCOS file system maintenance program
+Xwas called ACCE (short for access), a Swiss Army knife type program, and
+Xone of its sub-functions was LC, which gave the usual baroque display.
+XA separate LC program was written to give the more commonly wanted structure
+Xinfo, and CLIS (for catalog listing) to give a more "ls -l" type of display.
+X
+X			-Kent+
+X
+X	
+END_OF_FILE
+  if test 4997 -ne `wc -c <'README'`; then
+    echo shar: \"'README'\" unpacked with wrong size!
+  fi
+  # end of 'README'
+fi
+if test -f 'MANIFEST' -a "${1}" != "-c" ; then 
+  echo shar: Will not clobber existing file \"'MANIFEST'\"
+else
+  echo shar: Extracting \"'MANIFEST'\" \(554 characters\)
+  sed "s/^X//" >'MANIFEST' <<'END_OF_FILE'
+X   File Name		Archive #	Description
+X----------------------------------------------------------
+X README                     1	General information file.
+X MANIFEST                   1	This shipping list.
+X History                    1   The history of lc.
+X lc.1                       2	lc manual page in nroff format.
+X lc.c                       1	Source to the lc command.
+X lc.mk                      1	Makefile for the lc command.
+X patchlevel.h               1   Patch level indicator file.
+X qsort.c                    1	BSD libc.a qsort source (optional)
+END_OF_FILE
+  if test 554 -ne `wc -c <'MANIFEST'`; then
+    echo shar: \"'MANIFEST'\" unpacked with wrong size!
+  fi
+  # end of 'MANIFEST'
+fi
+if test -f 'History' -a "${1}" != "-c" ; then 
+  echo shar: Will not clobber existing file \"'History'\"
+else
+  echo shar: Extracting \"'History'\" \(1992 characters\)
+  sed "s/^X//" >'History' <<'END_OF_FILE'
+X#
+X# @(#)History	1.2 8/6/92
+X#
+X#  This file is a running history of the lc command.
+X#
+X#  This file is not meant to describe every system that lc runs on
+X#  just those that were important at the time.
+X#
+XHistory:
+X      1984:
+X      =====
+X      Initially designed on an IBM-XT running Coherent in 1984.
+X      Ported to XENIX on an IBM-AT.
+X
+X      1985:
+X      =====
+X      Ported to System V on AT&T 3Bs in 1985.
+X
+X      1986:
+X      =====
+X      Ported to DEC Vax 11/750 running System V.
+X      Ported to BSD4.2 on a Sequent Balance 8000.
+X      Jeff Minnig added the initial support for links.  Good Job Jeff!
+X
+X      1988:
+X      =====
+X      Ported to SunOS 4.0 on a Sun 3/60.
+X      Rick Ohnemus did major surgery to remove static storage
+X      and *greatly* enhanced the link support. Thanks Rick!
+X
+X      1989:
+X      =====
+X      Tested with Ultrix 3.0 & 3.1 on a DECstation 3100.
+X      Tested with Ultrix 3.0 & 3.1 on a VAXstation 3500.
+X      Ported to AIX 2.2 on an IBM RT.
+X      Tested with UTek on a Tektronix 4319.
+X      Tested with IRIX System V on a Silicon Graphics Iris 4D/210GTX.
+X      Tested with AmigaDOS 1.3 on an Amiga 1000.
+X      Tested with SunOS 4.0.3 on a Sparkstation 1.
+X      Tested with UTek on a Tektronix XD8810.
+X
+X      1990:
+X      =====
+X      Tested with AIX 3.+ on a Risc System/6000.
+X      Ivan Fris added the ability to combine "only" options.
+X      Mike Peterson ported it to the Apollo Domain/OS SR10.2.
+X
+X      1992:
+X      =====
+X      - Tim Goodwin fixed a bug concerning unresolved symbolic links which
+X        were specified on the command line.
+X  
+X      - Jonthan Bayer added the ability to display block sizes with the files,
+X          added the ability to display inodes with the files,
+X          added the ability to sort the files by column,
+X          added the ability to display file which are inaccessible,
+X          added the ability to display only those files accessible by the user,
+X          added spell checking to the CDPATH.  Fantastic additions Jonathan!!
+END_OF_FILE
+  if test 1992 -ne `wc -c <'History'`; then
+    echo shar: \"'History'\" unpacked with wrong size!
+  fi
+  # end of 'History'
+fi
+if test -f 'lc.1' -a "${1}" != "-c" ; then 
+  echo shar: Will not clobber existing file \"'lc.1'\"
+else
+  echo shar: Extracting \"'lc.1'\" \(5907 characters\)
+  sed "s/^X//" >'lc.1' <<'END_OF_FILE'
+X.\" @(#)lc.1	1.7 8/7/92 Kent Landfield;
+X.TH LC 1 "Usenet Source"
+X.SH NAME
+X.B lc 
+X\- categorize and list directory and file names in columns
+X.SH SYNOPSIS
+X.B lc
+X[
+X.B \-abBcCdDefFiIlLmMrsS1xX
+X]
+X[ directory ... ]
+X.SH DESCRIPTION
+X.B lc
+Xlists the elements of the given directories.  The elements are
+Xdivided into minimally five basic types (files, directories, 
+Xcharacter special files, block special files, and fifos) and 
+Xare printed in alphabetical order.  They are normally printed 
+Xcolumn-wise across the screen, preceded by a title indicating
+Xthe type. The
+X.B \-1
+Xoption can be used to force single-column untitled output, and the
+X.B \-C
+Xoption can be used to print column-wise down the screen.
+X.PP
+X.B lc
+Xuses the environment variables
+X.B LC,
+X.B CDPATH 
+Xand
+X.B COLS 
+Xto allow you to set up a default set of display options that
+X.B lc
+Xshould use each time is it run. Options on the command line override
+Xoptions specified in the environment if there is a conflict.
+X.B LC
+Xis used to set 
+X.B lc
+Xspecific options. All command line options shown in the option list 
+Xbelow can be used in setting default options within the environment 
+Xvariable 
+X.B LC.
+X.B CDPATH 
+Xis searched for a file not found at the requested location or
+Xin the current directory. This is an extremely handy feature of 
+X.B lc.
+X.B COLS 
+Xis used to switch the column width between 80 and 132 column display.
+X.PP
+X.B lc 
+Xhas incorporated the minimal the spell checking routines found in the book,
+XThe UNIX Programming Environment, by Brian Kernighan and Rob Pike.  
+X.PP
+XIf the command line argument list contains more than one name, the 
+Xcontents of the directories named in the list are displayed and all 
+Xother names are displayed one per line with the type of the file 
+Xdisplayed on the same line. If the 
+X.B -D 
+Xoption is supplied in the environment or on the command line all 
+Xnon-directory files are ignored.  If no file or directory is specified the 
+Xcurrent working directory is listed by default.  The special entries
+X``.'' and ``..'' are not listed.
+X.PP
+XNot all options are supported on every system. (e.g. no symbolic links
+Xon your system ? Options 
+X.B -s, -I -L
+Xor 
+X.B -l
+Xwon't be available...) On systems which support symbolic links, 
+Xthe symbolic links are normally followed, and each prints under 
+Xthe category of the type of file to which it is linked.  If the 
+Xsymbolic link points to a nonexistent path name, or if you do not 
+Xhave permission to resolve the path name,
+X.B lc
+Xprints out an error message indicating it cannot resolve the link.
+XThis type of message can be suppressed through the use of the 
+X.B 'I'
+Xoption described below.
+X.SH OPTIONS
+X.IP "-a" 6
+XList dot files as well. Normally 
+X.B lc 
+Xdoes not display files beginning with a '.' unless this option is 
+Xspecified. The system '.' and '.. files are never displayed since
+Xthey give you no real additional information and would just clutter
+Xup the display.
+X.IP "-b"
+XList block special files only.
+X.IP "-B"
+XDisplay the file size in blocks along with the file name.
+X.IP "-c"
+XList character special files only.
+X.IP "-C"
+XSort by column.
+X.IP "-d"
+XList directories only.
+X.IP "-D"
+XDo not display singular files. If you do not use this option and
+Xexecute "lc /unix", your output will be "/unix: file". This is 
+Xuseful in shell scripts but is sometimes annoying if you execute
+Xa command such as "lc /usr/lib/*" and all you wish to see is the
+Xfirst level of directories and not a lot of "filename: file" messages.
+X.IP "-e"
+XMark executable files with '*'. This options allows you to have executables
+Xdisplayed with a '*' appended to the end of the file name.
+X.IP "-f"
+XList regular files only.
+X.IP "-F"
+XList fifo files only.
+X.IP "-i"
+XDisplay the inode number along with the file name.
+X.IP "-I"
+XDo not report unresolved symbolic link messages. Normally
+X.B lc
+Xprints out a message stating that it cannot resolve the symbolic link.
+XUse of this option suppresses the display of those messages.
+X.IP "-l"
+XMark symbolic links with '@'. This options allows you to have symbolic
+Xlinks displayed with a '@' appended to the end of the file name.
+X.IP "-L"
+XDisplay symbolic links. This options allows you to have 
+X.B lc
+Xoutput a display showing what files the symbolic links refer to.
+X.IP "-m"
+XList shared memory name space entry files only.
+X.IP "-M"
+XList semaphore name space entry files only.
+X.IP "-r"
+XList the directory entries as they appear in the directory file. No 
+Xsorting of output prior to displaying.
+X.IP "-s"
+XList symbolic links only.
+X.IP "-S"
+XList AF_UNIX socket files only.
+X.IP "-1"
+XList files one per line instead of in columns.
+X.IP "-v"
+XPrint the software's version information.
+X.IP "-x"
+XOnly display those files and directories which are either owned by the user or
+Xaccessible by the user.
+X.IP "-X"
+XDisplay those files which are inaccessible.  All directories will be
+Xdisplayed, thereby allowing the user to see unavailable files inside the
+Xdirectories.
+X.SH DIAGNOSTICS
+X.PP
+X.B lc
+Xdoes not support recursion but I have never found this to
+Xbe that necessary to put in. 
+X.nr
+X      $ find directory-to-descend -type d -print | xargs lc
+X.nf
+Xworks just fine when recursion is needed.
+X.SH AUTHOR
+XKent Landfield <kent@sterling.com>
+X.SH CREDITS
+X.nr
+XJeff Minnig <jeff@dsndata.uucp> added the initial symbolic link support and
+Xported lc to run in both domains on Sequent's Balance 8000.
+X.PP
+XRick Ohnemus <rick@IMD.Sterling.COM> did major surgery to remove static 
+Xstorage and *greatly* enhanced the link support. Thanks Rick!
+X.PP
+XMike Peterson <root@alchemy.chem.utoronto.ca> ported lc to the Apollo Domain/OS SR10.2.
+X.PP
+XIvan Fris <neumann.une.oz.au!ivan> added the ability to combine the "only" options.
+X.PP
+XTim Goodwin <Tim.Goodwin@uknet.ac.uk> fixed a bug concerning unresolved 
+Xsymbolic links specified on the command line. 
+X.PP
+XJonathan Bayer <jbayer@ispi.com> added several features, including the 
+Xoptions -C -i -x -X and added spell checking to CDPATH usage.  Thanks Jonathan!
+END_OF_FILE
+  if test 5907 -ne `wc -c <'lc.1'`; then
+    echo shar: \"'lc.1'\" unpacked with wrong size!
+  fi
+  # end of 'lc.1'
+fi
+if test -f 'lc.mk' -a "${1}" != "-c" ; then 
+  echo shar: Will not clobber existing file \"'lc.mk'\"
+else
+  echo shar: Extracting \"'lc.mk'\" \(3185 characters\)
+  sed "s/^X//" >'lc.mk' <<'END_OF_FILE'
+X#
+X#    "@(#)lc.mk	1.10 8/6/92 
+X#
+X#  Copyright (c) 1984, 1985, 1986, 1987, 1988, 1989, 1990,
+X#                1991, 1992 by Kent Landfield.
+X#
+X# This makefile is used to compile lc. 
+X#
+XI =	/usr/include
+XS = 	$(I)/sys
+X#
+X#  Have a favorite C compiler that is not cc... Too bad. ;-)
+XCC=cc
+X#CC=gcc
+X#
+X# Specify the multiple of 512 that your du(1) reports blocksizes System V 
+X# du(1) gives the number of 512 byte blocks while BSD specifies kilobytes.
+X#RPTSIZ = -DBLK_MULTIPLE=1
+XRPTSIZ = -DBLK_MULTIPLE=2
+X
+X# If you want to specify the block size here uncomment the following line:
+X#BLKSIZE = -DBLOCKSIZE=512
+X#
+X# If you are running on a BSD 4.2 box:
+X# (note - if compiling on a sequent in att environment...`ucb make -f lc.mk`)
+X# FLAGS = -DBSD -DDIRECT
+X#         or
+X#
+X# If you are running on a BSD (4.3 or later), SunOS (4.0 or later),
+X# or Ultrix (3.0 or later) box:
+XFLAGS = -DBSD -DLENS
+X#
+X# FLAGS = -DBSD
+X#         or
+X#
+X# If you are running on an Ultrix box and using the POSIX environment:
+X# FLAGS = -DPOSIX
+X#         or
+X#
+X# If you are running on a Xenix box:
+X# FLAGS = -DXENIX
+X#         or
+X#
+X# If you are running System V or AIX 2.2:
+X# FLAGS =  -DLENS
+X#         or
+X#
+X# This runs on AIX but it does not lint well due to the include
+X# files on AIX. It works, that's all I can say...
+X# If you are running AIX 3.0 or later:
+X# FLAGS = -D_BSD -DBSD
+X#         or
+X#
+X# If you are running System V with Doug Gwyn's directory routines
+X# or Silicon Graphics or Utek 3.2d:
+X# FLAGS = -DPOSIX
+X# 
+X#
+X# OPTIM is used for setting debugging or optimizing
+X# flags for the compilation.
+X#OPTIM=-O -Wall
+XOPTIM=-O
+X
+X# Are the directory routines in another library ?
+X# Or do you wish to use shared libraries ?
+X# Add additional libraries here...
+X# LDFLAGS = -lndir
+X# LDFLAGS = -lc_s
+XLDFLAGS = 
+X#
+X# 'qsort' function in C library
+X# QSORTO =
+X# QSORTC =
+X#
+X# 'qsort' function not in C library Or Your qsort library
+X# function is slooow.
+X#
+X# QSORTO = qsort.o
+X# QSORTC = qsort.c
+X#
+X# Installation ownership and directory. Customize
+X# for your installation. Warning, if you do not
+X# install this on your root partition, it will
+X# not be available for use in single user mode.
+X# Yes I know that this last statement is obvious
+X# but it is extremely irritating not to have it
+X# available...
+X#
+X# This is one program that we use so often, that we have set
+X# the sticky bit on (chmod +t lc) on our older systems were
+X# it matters...
+X#
+XBINDIR=/bin
+XMODE=755
+XOWNER=bin
+XGROUP=bin
+X
+XCFLAGS = $(OPTIM) $(FLAGS) $(BLKSIZE) $(RPTSIZ)
+XLINTFLAGS = $(FLAGS) $(BLKSIZE) $(RPTSIZ)
+XSRCS = lc.c $(QSORTC)
+XOBJS = lc.o $(QSORTO)
+X
+Xlc: lc.o $(QSORTO)
+X	$(CC) $(CFLAGS) lc.o $(QSORTO) -o lc $(LDFLAGS)
+X
+Xlint:
+X	lint $(LINTFLAGS) $(SRCS)
+X
+Xclean:
+X	rm -f $(OBJS)
+X
+Xclobber: clean
+X	rm -f lc
+X
+Xinstall: lc
+X	strip lc
+X	cp lc $(BINDIR)/lc
+X	chmod $(MODE)  $(BINDIR)/lc
+X	chown $(OWNER) $(BINDIR)/lc
+X	chgrp $(GROUP) $(BINDIR)/lc
+X
+Xprint:
+X	cprint MANIFEST  | lpr -Plw
+X	cprint README    | lpr -Plw
+X	cprint lc.1      | lpr -Plw
+X	cprint lc.c      | lpr -Plw
+X	cprint lc.mk     | lpr -Plw
+X	cprint qsort.c   | lpr -Plw
+X
+X# CodeCenter lines
+X
+Xlc_src: $(SRCS)
+X	#load $(CFLAGS) $(SRCS)
+X
+X# Purify lines
+X
+Xpurify: lc.o $(QSORTO)
+X	purify $(CC) $(CFLAGS) lc.o $(QSORTO) -o lc $(LDFLAGS)
+X
+END_OF_FILE
+  if test 3185 -ne `wc -c <'lc.mk'`; then
+    echo shar: \"'lc.mk'\" unpacked with wrong size!
+  fi
+  # end of 'lc.mk'
+fi
+if test -f 'patchlevel.h' -a "${1}" != "-c" ; then 
+  echo shar: Will not clobber existing file \"'patchlevel.h'\"
+else
+  echo shar: Extracting \"'patchlevel.h'\" \(79 characters\)
+  sed "s/^X//" >'patchlevel.h' <<'END_OF_FILE'
+X/*
+X**    @(#)patchlevel.h	1.1 8/2/92
+X*/
+X#define RELEASE 2
+X#define PATCHLEVEL 0
+END_OF_FILE
+  if test 79 -ne `wc -c <'patchlevel.h'`; then
+    echo shar: \"'patchlevel.h'\" unpacked with wrong size!
+  fi
+  # end of 'patchlevel.h'
+fi
+if test -f 'qsort.c' -a "${1}" != "-c" ; then 
+  echo shar: Will not clobber existing file \"'qsort.c'\"
+else
+  echo shar: Extracting \"'qsort.c'\" \(6230 characters\)
+  sed "s/^X//" >'qsort.c' <<'END_OF_FILE'
+X/*
+X * Copyright (c) 1980 Regents of the University of California.
+X * All rights reserved.
+X *
+X * Redistribution and use in source and binary forms are permitted
+X * provided that the above copyright notice and this paragraph are
+X * duplicated in all such forms and that any documentation,
+X * advertising materials, and other materials related to such
+X * distribution and use acknowledge that the software was developed
+X * by the University of California, Berkeley.  The name of the
+X * University may not be used to endorse or promote products derived
+X * from this software without specific prior written permission.
+X * THIS SOFTWARE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR
+X * IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
+X * WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
+X */
+X
+X#if !defined(lint)
+Xstatic char sccsid[] = "@(#)qsort.c	5.4 (Berkeley) 6/27/88";
+X#endif /* LIBC_SCCS and not lint */
+X
+X/*
+X * qsort.c:
+X * Our own version of the system qsort routine which is faster by an average
+X * of 25%, with lows and highs of 10% and 50%.
+X * The THRESHold below is the insertion sort threshold, and has been adjusted
+X * for records of size 48 bytes.
+X * The MTHREShold is where we stop finding a better median.
+X */
+X
+X#define		THRESH		4		/* threshold for insertion */
+X#define		MTHRESH		6		/* threshold for median */
+X
+Xstatic  int		(*qcmp)();		/* the comparison routine */
+Xstatic  int		qsz;			/* size of each record */
+Xstatic  int		thresh;			/* THRESHold in chars */
+Xstatic  int		mthresh;		/* MTHRESHold in chars */
+X
+X/*
+X * qst:
+X * Do a quicksort
+X * First, find the median element, and put that one in the first place as the
+X * discriminator.  (This "median" is just the median of the first, last and
+X * middle elements).  (Using this median instead of the first element is a big
+X * win).  Then, the usual partitioning/swapping, followed by moving the
+X * discriminator into the right place.  Then, figure out the sizes of the two
+X * partions, do the smaller one recursively and the larger one via a repeat of
+X * this code.  Stopping when there are less than THRESH elements in a partition
+X * and cleaning up with an insertion sort (in our caller) is a huge win.
+X * All data swaps are done in-line, which is space-losing but time-saving.
+X * (And there are only three places where this is done).
+X */
+X
+Xstatic void
+Xqst(base, max)
+X	char *base, *max;
+X{
+X	register char c, *i, *j, *jj;
+X	register int ii;
+X	char *mid, *tmp;
+X	int lo, hi;
+X
+X	/*
+X	 * At the top here, lo is the number of characters of elements in the
+X	 * current partition.  (Which should be max - base).
+X	 * Find the median of the first, last, and middle element and make
+X	 * that the middle element.  Set j to largest of first and middle.
+X	 * If max is larger than that guy, then it's that guy, else compare
+X	 * max with loser of first and take larger.  Things are set up to
+X	 * prefer the middle, then the first in case of ties.
+X	 */
+X	lo = max - base;		/* number of elements as chars */
+X	do	{
+X		mid = i = base + qsz * ((lo / qsz) >> 1);
+X		if (lo >= mthresh) {
+X			j = (qcmp((jj = base), i) > 0 ? jj : i);
+X			if (qcmp(j, (tmp = max - qsz)) > 0) {
+X				/* switch to first loser */
+X				j = (j == jj ? i : jj);
+X				if (qcmp(j, tmp) < 0)
+X					j = tmp;
+X			}
+X			if (j != i) {
+X				ii = qsz;
+X				do	{
+X					c = *i;
+X					*i++ = *j;
+X					*j++ = c;
+X				} while (--ii);
+X			}
+X		}
+X		/*
+X		 * Semi-standard quicksort partitioning/swapping
+X		 */
+X		for (i = base, j = max - qsz; ; ) {
+X			while (i < mid && qcmp(i, mid) <= 0)
+X				i += qsz;
+X			while (j > mid) {
+X				if (qcmp(mid, j) <= 0) {
+X					j -= qsz;
+X					continue;
+X				}
+X				tmp = i + qsz;	/* value of i after swap */
+X				if (i == mid) {
+X					/* j <-> mid, new mid is j */
+X					mid = jj = j;
+X				} else {
+X					/* i <-> j */
+X					jj = j;
+X					j -= qsz;
+X				}
+X				goto swap;
+X			}
+X			if (i == mid) {
+X				break;
+X			} else {
+X				/* i <-> mid, new mid is i */
+X				jj = mid;
+X				tmp = mid = i;	/* value of i after swap */
+X				j -= qsz;
+X			}
+X		swap:
+X			ii = qsz;
+X			do	{
+X				c = *i;
+X				*i++ = *jj;
+X				*jj++ = c;
+X			} while (--ii);
+X			i = tmp;
+X		}
+X		/*
+X		 * Look at sizes of the two partitions, do the smaller
+X		 * one first by recursion, then do the larger one by
+X		 * making sure lo is its size, base and max are update
+X		 * correctly, and branching back.  But only repeat
+X		 * (recursively or by branching) if the partition is
+X		 * of at least size THRESH.
+X		 */
+X		i = (j = mid) + qsz;
+X		if ((lo = j - base) <= (hi = max - i)) {
+X			if (lo >= thresh)
+X				qst(base, j);
+X			base = i;
+X			lo = hi;
+X		} else {
+X			if (hi >= thresh)
+X				qst(i, max);
+X			max = j;
+X		}
+X	} while (lo >= thresh);
+X	return;
+X}
+X
+X/*
+X * qsort:
+X * First, set up some global parameters for qst to share.  Then, quicksort
+X * with qst(), and then a cleanup insertion sort ourselves.  Sound simple?
+X * It's not...
+X */
+X
+Xvoid
+Xqsort(base, n, size, compar)
+X	char	*base;
+X	int	n;
+X	int	size;
+X	int	(*compar)();
+X{
+X	register char c, *i, *j, *lo, *hi;
+X	char *min, *max;
+X
+X	if (n <= 1)
+X		return;
+X	qsz = size;
+X	qcmp = compar;
+X	thresh = qsz * THRESH;
+X	mthresh = qsz * MTHRESH;
+X	max = base + n * qsz;
+X	if (n >= THRESH) {
+X		qst(base, max);
+X		hi = base + thresh;
+X	} else {
+X		hi = max;
+X	}
+X	/*
+X	 * First put smallest element, which must be in the first THRESH, in
+X	 * the first position as a sentinel.  This is done just by searching
+X	 * the first THRESH elements (or the first n if n < THRESH), finding
+X	 * the min, and swapping it into the first position.
+X	 */
+X	for (j = lo = base; (lo += qsz) < hi; )
+X		if (qcmp(j, lo) > 0)
+X			j = lo;
+X	if (j != base) {
+X		/* swap j into place */
+X		for (i = base, hi = base + qsz; i < hi; ) {
+X			c = *j;
+X			*j++ = *i;
+X			*i++ = c;
+X		}
+X	}
+X	/*
+X	 * With our sentinel in place, we now run the following hyper-fast
+X	 * insertion sort.  For each remaining element, min, from [1] to [n-1],
+X	 * set hi to the index of the element AFTER which this one goes.
+X	 * Then, do the standard insertion sort shift on a character at a time
+X	 * basis for each element in the frob.
+X	 */
+X	for (min = base; (hi = min += qsz) < max; ) {
+X		while (qcmp(hi -= qsz, min) > 0)
+X			/* void */;
+X		if ((hi += qsz) != min) {
+X			for (lo = min + qsz; --lo >= min; ) {
+X				c = *lo;
+X				for (i = j = lo; (j -= qsz) >= hi; i = j)
+X					*i = *j;
+X				*i = c;
+X			}
+X		}
+X	}
+X	return;
+X}
+END_OF_FILE
+  if test 6230 -ne `wc -c <'qsort.c'`; then
+    echo shar: \"'qsort.c'\" unpacked with wrong size!
+  fi
+  # end of 'qsort.c'
+fi
+echo shar: End of archive 1 \(of 2\).
+cp /dev/null ark1isdone
+MISSING=""
+for I in 1 2 ; do
+    if test ! -f ark${I}isdone ; then
+	MISSING="${MISSING} ${I}"
+    fi
+done
+if test "${MISSING}" = "" ; then
+    echo You have unpacked both archives.
+    rm -f ark[1-9]isdone
+else
+    echo You still must unpack the following archives:
+    echo "        " ${MISSING}
+fi
+exit 0
+exit 0 # Just in case...

@@ -1,0 +1,1799 @@
+Newsgroups: comp.sources.misc
+From: kent@sparky.sterling.com (Kent Landfield)
+Subject:  v31i073:  lc - Categorize and List Files In Columns, Part02/02
+Message-ID: <1992Aug7.182810.4074@sparky.imd.sterling.com>
+X-Md4-Signature: ef161ba9ece1369061f82d8585b5c0e1
+Date: Fri, 7 Aug 1992 18:28:10 GMT
+Approved: kent@sparky.imd.sterling.com
+
+Submitted-by: kent@sparky.sterling.com (Kent Landfield)
+Posting-number: Volume 31, Issue 73
+Archive-name: lc/part02
+Environment: UNIX, AmigaDOS, MINIX, Coherent
+Supersedes: lc: Volume 14, Issue 82-83
+
+#! /bin/sh
+# This is a shell archive.  Remove anything before this line, then feed it
+# into a shell via "sh file" or similar.  To overwrite existing files,
+# type "sh file -c".
+# The tool that generated this appeared in the comp.sources.unix newsgroup;
+# send mail to comp-sources-unix@uunet.uu.net if you want that tool.
+# Contents:  lc.c
+# Wrapped by kent@sparky on Fri Aug  7 12:44:03 1992
+PATH=/bin:/usr/bin:/usr/ucb ; export PATH
+echo If this archive is complete, you will see the following message:
+echo '          "shar: End of archive 2 (of 2)."'
+if test -f 'lc.c' -a "${1}" != "-c" ; then 
+  echo shar: Will not clobber existing file \"'lc.c'\"
+else
+  echo shar: Extracting \"'lc.c'\" \(42153 characters\)
+  sed "s/^X//" >'lc.c' <<'END_OF_FILE'
+X/*
+X** This software is 
+X**
+X** Copyright (c) 1984, 1985, 1986, 1987, 1988, 1989, 1990,
+X**               1991, 1992 by Kent Landfield.
+X**
+X** Permission is hereby granted to copy, distribute or otherwise 
+X** use any part of this package as long as you do not try to make 
+X** money from it or pretend that you wrote it.  This copyright 
+X** notice must be maintained in any copy made.
+X**
+X** Use of this software constitutes acceptance for use in an AS IS 
+X** condition. There are NO warranties with regard to this software.  
+X** In no event shall the author be liable for any damages whatsoever 
+X** arising out of or in connection with the use or performance of this 
+X** software.  Any use of this software is at the user's own risk.
+X**
+X**  If you make modifications to this software that you feel 
+X**  increases it usefulness for the rest of the community, please 
+X**  email the changes, enhancements, bug fixes as well as any and 
+X**  all ideas to me. Thanks!
+X**
+X**              Kent Landfield
+X**              kent@sterling.com
+X**              sparky!kent
+X**
+X**  Subsystem:   lc - List Columnwise/Categories
+X**
+X**  Abstract :   lc -- categorize files in a directory and list columnwize
+X**
+X**  Usage:       lc [ options ] [ directory ... ]
+X**
+X**  Options:
+X**               -a      List dot files as well.
+X**               -b      List block special files only
+X** JB            -B      Display the size in blocks
+X**               -c      List character special files only
+X** JB            -C      Sort down the columns instead of across
+X**               -d      List directories only
+X**               -D      Do not display singular files
+X**               -e      Mark executable files with '*'
+X**               -f      List regular files only
+X**               -F      List fifo files only
+X** JB            -i      Display the inode number
+X**               -I      Suppress unresolved symbolic link messages.
+X**               -L      Display symbolic links
+X**               -l      Mark symbolic links with '@'
+X**               -m      List shared memory name space entry files only
+X**               -M      List semaphore name space entry files only
+X**               -r      Do not sort the filenames before displaying.
+X**               -S      List socket file only
+X**               -s      List symbolic links only
+X**               -v      Print the version of lc 
+X** JB            -x      Only display those files the user owns or has access to
+X** JB            -X      Only display those files the user does not own and
+X**                       does not have access to.
+X**               -1      List files one per line instead of in columns
+X**
+X** The "only" options can be combined.
+X** If there is no 'directory' specified, the current directory is used.
+X** Not all options are supported on every system. (e.g. no symbolic links
+X** on your system ? Options -s, -L or -l won't be available..)
+X**
+X*/
+Xstatic char *sccsid = "@(#)lc.c	1.34 8/7/92  Kent Landfield";
+X#include "patchlevel.h"
+X
+X#include <stdio.h>
+X#ifdef BSD
+X#  include <strings.h>
+X#  include <sys/param.h>
+X#else
+X#  include <string.h>
+X#  include <sys/types.h>
+X#endif
+X#include <sys/stat.h>
+X#ifdef POSIX
+X#  include <limits.h>
+X#  include <dirent.h>
+X#else
+X#  ifdef BSD
+X#    ifdef DIRECT
+X#      include <sys/dir.h>
+X#    else
+X#      include <dirent.h>
+X#    endif
+X#  else
+X#    include <sys/dir.h>
+X#  endif
+X#endif
+X
+X#ifndef NAME_MAX
+X#  ifdef BSD
+X#    define NAME_MAX    MAXNAMLEN
+X#  else
+X#    ifdef DIRSIZ
+X#      define NAME_MAX  DIRSIZ
+X#    else
+X#      define NAME_MAX  14
+X#    endif
+X#  endif
+X#endif
+X
+X#ifndef PATH_MAX
+X#  ifdef MAXPATHLEN
+X#    define PATH_MAX    MAXPATHLEN
+X#  else
+X#    ifdef MAXNAMLEN
+X#      define PATH_MAX  MAXNAMLEN
+X#    else
+X#      define PATH_MAX  255
+X#    endif
+X#  endif
+X#endif
+X
+X#define BUFSIZE         PATH_MAX
+X
+X#define NODES_PER_HUNK  256
+X
+X#define TRUE            1
+X#define FALSE           0
+X
+X#ifndef S_IXUSR
+X#  define S_IXUSR       S_IEXEC
+X#endif
+X
+X#ifndef S_IXGRP
+X#  define S_IXGRP       (S_IEXEC >> 3)
+X#endif
+X
+X#ifndef S_IXOTH
+X#  define S_IXOTH       (S_IEXEC >> 6)
+X#endif
+X
+X#define DIR_ONLY        1<<0
+X#define FILE_ONLY       1<<2
+X#ifdef S_IFCHR
+X#  define CHAR_ONLY     1<<3
+X#endif
+X#ifdef S_IFBLK
+X#  define BLOCK_ONLY    1<<4
+X#endif
+X#ifndef apollo
+X# ifdef S_IFIFO
+X#  define FIFO_ONLY     1<<5
+X# endif
+X#endif
+X#ifdef S_IFLNK
+X#  define LNK_ONLY      1<<6
+X#endif
+X#ifdef S_IFSOCK
+X#  define SOCK_ONLY     1<<7
+X#endif
+X#ifdef S_IFNAM
+X#  define SEM_ONLY      1<<8
+X#  define SD_ONLY       1<<9
+X#endif
+X
+X#ifdef BSD
+X#  define strrchr       rindex
+X#  define strchr        index
+X#endif
+X
+X/*
+X** File name storage structure
+X*/
+X
+Xstruct list {
+X    int num;
+X    int max;
+X    char **names;
+X#ifdef LENS
+X    int maxlen;
+X#endif
+X};
+X
+X/*
+X** File name storage arrays
+X*/
+X
+X#ifdef LENS
+X
+X#ifdef S_IFBLK
+Xstruct list Blks = { 0, 0, (char **) NULL, 0 };
+X#endif
+X
+X#ifdef S_IFCHR
+Xstruct list Chrs = { 0, 0, (char **) NULL, 0 };
+X#endif
+X
+Xstruct list Dirs = { 0, 0, (char **) NULL, 0 };
+Xstruct list Fls = { 0, 0, (char **) NULL, 0 };
+X
+X#ifndef apollo
+X#ifdef S_IFIFO
+Xstruct list Fifos = { 0, 0, (char **) NULL, 0 };
+X#endif
+X#endif
+X
+X#ifdef S_IFLNK
+Xstruct list Lnks = { 0, 0, (char **) NULL, 0 };
+Xstruct list Lnksn = { 0, 0, (char **) NULL, 0 };
+X#endif
+X
+X#ifdef S_IFSOCK
+Xstruct list Socks = { 0, 0, (char **) NULL, 0 };
+X#endif
+X
+X#ifdef S_IFNAM
+Xstruct list Sds = { 0, 0, (char **) NULL, 0 };
+Xstruct list Sems = { 0, 0, (char **) NULL, 0 };
+X#endif
+X
+X#else   /* ifndef LENS */
+X
+X#ifdef S_IFBLK
+Xstruct list Blks = { 0, 0, (char **) NULL };
+X#endif
+X
+X#ifdef S_IFCHR
+Xstruct list Chrs = { 0, 0, (char **) NULL };
+X#endif
+X
+Xstruct list Dirs = { 0, 0, (char **) NULL };
+Xstruct list Fls = { 0, 0, (char **) NULL };
+X
+X#ifndef apollo
+X#ifdef S_IFIFO
+Xstruct list Fifos = { 0, 0, (char **) NULL };
+X#endif
+X#endif
+X
+X#ifdef S_IFLNK
+Xstruct list Lnks = { 0, 0, (char **) NULL };
+Xstruct list Lnksn = { 0, 0, (char **) NULL };
+X#endif
+X
+X#ifdef S_IFSOCK
+Xstruct list Socks = { 0, 0, (char **) NULL };
+X#endif
+X
+X#ifdef S_IFNAM
+Xstruct list Sds = { 0, 0, (char **) NULL };
+Xstruct list Sems = { 0, 0, (char **) NULL };
+X#endif
+X
+X#endif /* LENS */
+X
+Xchar *Progname;
+X
+Xint Allfiles = FALSE;       /* display '.' files as well    */
+Xint Display_single = TRUE;  
+Xint Executables = FALSE;    /* mark executable files        */
+Xint Level = 0;              
+Xint Maxlen = 0;             /* longest filename in category */
+Xint Only = FALSE;           /* limit display to types       */
+Xint Screen_width = 80;      /* display width 80/132         */
+Xint Single = FALSE;         /* display files one per line   */
+Xint Sort_wanted = TRUE;
+Xint Sort_down = FALSE;      /* sort by columns */
+Xint Display_inode = FALSE;  /* inode/file size */
+Xint Display_size = FALSE;   /* inode/file size */
+Xint Sort_offset = 0;        /* inode/file size */
+Xint Display_accessable = 0; /* accessable files */
+X
+X#define ACCESSABLE_ONLY    1
+X#define INACCESSABLE_ONLY  2
+X
+X#ifdef S_IFLNK
+Xint Ignore = FALSE;         /* ignore unresolved errors   */
+Xint Current = 0;
+Xint Disp_links = FALSE;
+Xint Mark_links = FALSE;
+Xint lstat();
+Xint readlink();
+X#endif
+X
+X#ifndef _BSD
+X# ifdef BSD
+X    extern char *sprintf();
+X    extern int  free();
+X    extern int  qsort();
+X    extern int  getuid();
+X    extern int  getgid();
+X    extern int  geteuid();
+X    extern int  getegid();
+X# else
+X    extern int  sprintf();
+X    extern void free();
+X    extern void qsort();
+X    extern uid_t getuid();
+X    extern uid_t geteuid();
+X    extern gid_t getgid();
+X    extern gid_t getegid();
+X# endif
+X extern int fprintf();
+X extern int printf();
+X extern int sscanf();
+X#endif
+X
+Xvoid lc();
+X
+Xextern char *getenv();
+Xextern char *malloc();
+Xextern char *realloc();
+Xextern int access();
+Xextern int fputs();
+Xextern int puts();
+Xextern int stat();
+Xextern void exit();
+X
+X/* S T R _ S A V  
+X *
+X *   str_sav() returns a pointer to a new string which is a dupli-
+X *   cate  of the string pointed to by s.  The space for the new
+X *   string is obtained using malloc(3).  If the new string  can-
+X *   not be created, the process prints an error message on stderr
+X *   and terminates.
+X */
+X
+Xchar *str_sav(s)
+X    char *s;
+X{
+X    char *p;
+X
+X    if ((p = malloc((unsigned)(strlen(s) + 1))) == (char *) NULL) {
+X        (void) fprintf(stderr, "%s: malloc: out of memory\n", Progname);
+X        exit(1);
+X    }
+X    (void) strcpy(p, s);
+X    return (p);
+X}
+X
+X/* D I R E C T O R Y
+X *
+X *  directory() is used to open and read the directory and pass
+X *  the filenames found to the routine lc();
+X */
+X#if (POSIX || BSD)
+Xvoid directory(dname)
+X    char *dname;
+X{
+X    register char *nbp;
+X    register char *nep;
+X    DIR *dstream;
+X    int i;
+X#ifdef DIRECT
+X    struct direct *dp;
+X#else
+X    struct dirent *dp;
+X#endif
+X
+X    /* add a slash to the end of the directory name */
+X    nbp = dname + strlen(dname);
+X#ifdef AMIGA
+X    if (*(nbp - 1) != ':') {
+X        *nbp++ = '/';
+X        *nbp = '\0';
+X    }
+X#else
+X    *nbp++ = '/';
+X    *nbp = '\0';
+X#endif
+X
+X    if ((dstream = opendir(dname)) == NULL) {
+X        (void) fprintf(stderr, "%s: can't open %s\n", Progname, dname);
+X        return;
+X    }
+X
+X    while ((dp = readdir(dstream)) != NULL) {
+X        if (strcmp(dp->d_name, ".") == 0
+X            || strcmp(dp->d_name, "..") == 0
+X            || (!Allfiles && *(dp->d_name) == '.'))
+X            continue;
+X
+X        for (i = 0, nep = nbp; dp->d_name[i] && i < NAME_MAX; i++)
+X            *nep++ = dp->d_name[i];
+X        *nep++ = '\0';
+X        lc(dname, 2);
+X    }
+X    (void) closedir(dstream);
+X    *--nbp = '\0';
+X    return;
+X}
+X
+X#else /* not POSIX or BSD */
+X
+X/* D I R E C T O R Y
+X *
+X *  directory() is used to open and read the directory and pass
+X *  the filenames found to the routine lc();
+X */
+Xvoid directory(dname)
+X    char *dname;
+X{
+X    register char *nbp;
+X    register char *nep;
+X    FILE *fd;
+X    int i;
+X    struct direct dir;
+X
+X    /* add a slash to the end of the directory name */
+X    nbp = dname + strlen(dname);
+X    *nbp++ = '/';
+X    *nbp = '\0';
+X
+X    if ((nbp + NAME_MAX + 2) >= (dname + BUFSIZE))  { /* dname too long */
+X        (void) fprintf(stderr, "%s: dirname too long: %s\n",
+X                       Progname, dname);
+X        return;
+X    }
+X
+X    if ((fd = fopen(dname, "r")) == (FILE *) NULL) { /* open the directory */
+X        (void) fprintf(stderr, "%s: can't open %s\n", Progname, dname);
+X        return;
+X    }
+X
+X    while (fread((char *) &dir, sizeof(dir), 1, fd) > 0) {
+X        if (dir.d_ino == 0
+X            || strcmp(dir.d_name, ".") == 0
+X            || strcmp(dir.d_name, "..") == 0)
+X            continue;
+X        for (i = 0, nep = nbp; i < NAME_MAX; i++)
+X            *nep++ = dir.d_name[i];
+X        *nep++ = '\0';
+X        lc(dname, 2);
+X    }
+X    (void) fclose(fd);
+X    *--nbp = '\0';     /* restore dname */
+X    return;
+X}
+X#endif
+X
+X/* G E T L I N K
+X *
+X *  getlink() calls readlink() which places the contents of the 
+X *  symbolic link referred to by fn in the buffer wk. The contents 
+X *  of the link are null terminated and the path is returned to
+X *  the calling funtion as a pointer to a storage area created
+X *  by using malloc(3);
+X */
+X
+X#ifdef S_IFLNK
+Xchar *getlink(fn)
+X    char *fn;
+X{
+X    char wk[PATH_MAX + 1];
+X    int rc;
+X
+X    rc = readlink(fn, wk, sizeof(wk));
+X    if (rc < 0)
+X        return ((char *) NULL);
+X    wk[rc] = '\0';
+X    return (str_sav(wk));
+X}
+X#endif
+X
+X/* P R I N T _ L I N E 
+X *
+X *  print_line() is used to format and output the files previously 
+X *  located. This routine could use a lot more smarts but currently
+X *  it is rather crude...
+X */
+X
+Xint print_line(files, ind)
+X    struct list *files;
+X    int ind;
+X{
+X    register char *frmt;
+X    char out_str[PATH_MAX + 5];
+X    int i;
+X    int prt_limit;
+X    int numrows = 0;
+X
+X    if (Single) {
+X#ifdef S_IFLNK
+X        if (Current == LNK_ONLY) {
+X            if (*(Lnksn.names + ind) != (char *) NULL)
+X                (void) printf("    %s -> %s\n",
+X                              *(Lnks.names + ind), *(Lnksn.names + ind));
+X            else
+X                (void) printf("    %s -> %s\n",
+X                              *(Lnks.names + ind), "UNRESOLVED");
+X            ind++;
+X            return (ind);
+X        }
+X#endif
+X        (void) puts(*(files->names + ind));
+X        ind++;
+X    }
+X    else if (Maxlen > ((Screen_width - 4) / 2)) {
+X        (void) printf("    %s\n", *(files->names + ind));
+X        ind++;
+X    }
+X    else {
+X         frmt = out_str;
+X         for (i = 0; i < 4; i++)
+X              *frmt++ = ' ';
+X
+X        /* The prt_limit may need to be smarter */
+X
+X         prt_limit = (Screen_width - 4) / (Maxlen + 1);
+X
+X         /*  sort by columns */
+X#ifdef LNK_ONLY
+X         if (Sort_down && Current != LNK_ONLY) {
+X#else       
+X         if (Sort_down) {
+X#endif
+X             numrows = (int)( (float)files->num / (float)prt_limit + 1.0);
+X             prt_limit = (int) ( (float)files->num / (float)numrows + (float)(numrows - 1) / (float)numrows);
+X         }
+X
+X         if (Maxlen == 3 || Maxlen == 1)
+X             prt_limit--;
+X
+X         while ((ind < files->num) && (prt_limit-- > 0)) {
+X              i = 0;
+X              do {
+X                   if (*(*(files->names + ind) + i) == '\0') {
+X                       while (i++ <= Maxlen)
+X                             *frmt++ = ' ';
+X                   }
+X                   else
+X                       *frmt++ = *(*(files->names + ind) + i);
+X                   i++;
+X              } while (i <= Maxlen);
+X#ifdef LNK_ONLY
+X              if (Sort_down && Current != LNK_ONLY)
+X#else       
+X              if (Sort_down)
+X#endif
+X                 ind += numrows;
+X              else
+X                 ind++;
+X         }
+X         *frmt = '\0';
+X         while (*--frmt == ' ')  /* strip trailing blanks */
+X             *frmt = '\0';
+X        
+X         (void) puts(out_str);
+X    }
+X    return (ind);
+X}
+X
+X/* S T R _ C M P
+X *
+X *  str_cmp is the comparison routine used by
+X *  qsort(3) to order the filenames inplace.
+X */
+X
+Xint str_cmp(s1, s2)
+X    char **s1;
+X    char **s2;
+X{
+X    /* inode/file sizes */
+X 
+X    return strcmp(&**s1 + Sort_offset, &**s2 + Sort_offset);
+X}
+X
+X/* P R _ I N F O
+X *
+X *  pr_info() is used to sort the data if required
+X *  and then pass it to print_line to actually output
+X *  the data.`
+X */
+X
+Xint pr_info(strng, files, flg, sort_needed)
+X    char *strng;
+X    struct list *files;
+X    int flg;
+X    int sort_needed;
+X{
+X    int pnum = 0;
+X
+X#ifdef LENS
+X    Maxlen = files->maxlen;
+X#endif
+X
+X#ifdef S_IFLNK
+X    if (!Single || Current == LNK_ONLY) {
+X        if (flg)
+X            (void) puts("");
+X        (void) puts(strng);
+X    }
+X#else
+X    if (!Single) {
+X        if (flg)
+X            (void) puts("");
+X        (void) puts(strng);
+X    }
+X#endif
+X
+X    if (sort_needed)
+X        qsort((char *) (files->names), files->num, sizeof(char *), str_cmp);
+X
+X    /* sort by columns */
+X    Maxlen++; /* this is to force an extra space between columns */
+X#ifdef LNK_ONLY
+X    if (Sort_down && Current != LNK_ONLY) {
+X#else
+X    if (Sort_down) {
+X#endif
+X        int numcols = (Screen_width - 4) / (Maxlen + 1);
+X        int numrows = (int)( (float)files->num / (float)numcols + 1.0);
+X         
+X        numcols = (int) ( (float)files->num / (float)numrows + (float)(numrows - 1) / (float)numrows);
+X 
+X        do {
+X                (void) print_line(files, pnum);
+X                pnum++;
+X        } while (pnum < numrows);
+X    }    
+X    else {
+X        do {
+X            pnum = print_line(files, pnum);
+X        } while (pnum < files->num);
+X    }    
+X    return (1);
+X}
+X
+X
+X/* P R I N T _ I N F O
+X *
+X *  print_info() is called to display all the filenames
+X *  located in the directory reading and storage functions.
+X */
+X
+Xvoid print_info()
+X{
+X    int flag = 0;
+X
+X#ifdef S_IFLNK
+X    int ssing;
+X
+X    Current = 0;
+X
+X    if (Lnks.num > 0 && (Disp_links == TRUE || Only & LNK_ONLY)) {
+X        ssing = Single;
+X        Single = TRUE;
+X        Current = LNK_ONLY;
+X#ifdef NOTDEF
+X        flag = pr_info("Symbolic Links: ", &Lnks, flag, 0);
+X#else
+X        flag = pr_info("Symbolic Links: ", &Lnks, flag, Sort_wanted);
+X#endif
+X        Single = ssing;
+X        Current = 0;
+X    }
+X#endif
+X
+X#ifdef S_IFSOCK
+X    if (Socks.num > 0 && (Only == 0 || Only & SOCK_ONLY))
+X        flag = pr_info("Sockets: ", &Socks, flag, Sort_wanted);
+X#endif
+X
+X#ifdef S_IFNAM
+X    if (Sems.num > 0 && (Only == 0 || Only & SEM_ONLY))
+X        flag = pr_info("Semaphore Files: ", &Sems, flag, Sort_wanted);
+X
+X    if (Sds.num > 0 && (Only == 0 || Only & SD_ONLY))
+X        flag = pr_info("Shared Data Files: ", &Sds, flag, Sort_wanted);
+X#endif
+X
+X#ifndef apollo
+X# ifdef S_IFIFO
+X    if (Fifos.num > 0 && (Only == 0 || Only & FIFO_ONLY))
+X        flag = pr_info("Fifo Files: ", &Fifos, flag, Sort_wanted);
+X# endif
+X#endif
+X
+X#ifdef S_IFCHR
+X    if (Chrs.num > 0 && (Only == 0 || Only & CHAR_ONLY))
+X        flag = pr_info("Character Special Files: ", &Chrs, flag, Sort_wanted);
+X#endif
+X
+X#ifdef S_IFBLK
+X    if (Blks.num > 0 && (Only == 0 || Only & BLOCK_ONLY))
+X        flag = pr_info("Block Special Files: ", &Blks, flag, Sort_wanted);
+X#endif
+X
+X    if (Dirs.num > 0 && (Only == 0 || Only & DIR_ONLY))
+X        flag = pr_info("Directories: ", &Dirs, flag, Sort_wanted);
+X
+X    if (Fls.num > 0 && (Only == 0 || Only & FILE_ONLY))
+X        flag = pr_info("Files: ", &Fls, flag, Sort_wanted);
+X
+X    return;
+X}
+X
+X/* B A S E N A M E
+X *
+X *  basename() is used to return the base file name of a
+X *  path refered to by name. The base file name is stored
+X *  into a storage location refered to by str. It is the
+X *  calling function's responsibility to assure adequate
+X *  storage is supplied.
+X */
+X
+Xvoid basename(name, str)
+X    char *name;
+X    char *str;
+X{
+X    char *p;
+X
+X    if ((p = strrchr(name, '/')) == (char *) NULL) {
+X#ifdef AMIGA
+X        if ((p = strchr(name, ':')) == (char *) NULL)
+X            (void) strcpy(str, name);
+X        else
+X            (void) strcpy(str, ++p);
+X#else
+X        (void) strcpy(str, name);
+X#endif
+X    }
+X    else
+X        (void) strcpy(str, ++p);
+X    return;
+X}
+X
+X/* A D D _ T O _ L I S T
+X *
+X * add_to_list() is used to add the supplied filename refered to
+X * by str to the appropriate category storage array.
+X */
+X
+Xvoid add_to_list(files, str)
+X    struct list *files;
+X    char *str;
+X{
+X    if (files->max == 0) {
+X        files->names = (char **) malloc(sizeof(char *) * NODES_PER_HUNK);
+X        if (files->names == (char **) NULL) {
+X            (void) fprintf(stderr,
+X                           "%s: malloc: out of memory\n", Progname);
+X            exit(1);
+X        }
+X        files->max = NODES_PER_HUNK;
+X    }
+X    else if (files->num == files->max) {
+X        files->names =
+X            (char **) realloc((char *) files->names,
+X                              (unsigned) sizeof(char *)
+X                              * (files->max + NODES_PER_HUNK));
+X        if (files->names == (char **) NULL) {
+X            (void) fprintf(stderr,
+X                           "%s: realloc: out of memory\n", Progname);
+X            exit(1);
+X        }
+X        files->max += NODES_PER_HUNK;
+X    }
+X    if (str == (char *) NULL)
+X        *(files->names + files->num++) = (char *) NULL;
+X    else
+X        *(files->names + files->num++) = str_sav(str);
+X    return;
+X}
+X
+X/* L C
+X *
+X * lc() is main function for determining the type of
+X * the file refered to by name.
+X */
+X
+Xvoid lc(name, cnt)
+X    char *name;
+X    int cnt;
+X{
+X#ifdef S_IFLNK
+X    char *link;
+X#endif
+X    char sav_str[BUFSIZE + 2 + 10]; /* inode/file size */
+X    char tmp[BUFSIZE + 2 + 10];     /* inode/file size */
+X    int mlen;
+X    struct stat sbuf;
+X    int display = TRUE;             /* access */
+X
+X#ifdef S_IFLNK
+X    if (lstat(name, &sbuf) < 0) {
+X        (void) fprintf(stderr, "%s: can't stat %s\n", Progname, name);
+X        return;
+X    }
+X#else
+X    if (stat(name, &sbuf) == -1) {
+X        (void) fprintf(stderr, "%s: can't stat %s\n", Progname, name);
+X        return;
+X    }
+X#endif
+X
+X    /*
+X    ** Only list files the user owns or has access to.
+X    */
+X
+X    if (Display_accessable &&
+X        Display_accessable != (ACCESSABLE_ONLY | INACCESSABLE_ONLY)) {   
+X        static int first = 1;
+X        static int uid;
+X        static int euid;
+X        static int gid;
+X        static int egid;
+X
+X        if (first) {
+X            first = 0;
+X            uid = getuid();
+X            euid = geteuid();
+X            gid = getgid();
+X            egid = getegid();
+X        }
+X        if (uid != sbuf.st_uid && euid != sbuf.st_uid &&
+X            gid != sbuf.st_gid && egid != sbuf.st_gid &&
+X            ((sbuf.st_mode & 0007) == 0) ) {
+X            if (Display_accessable & ACCESSABLE_ONLY)
+X                return;
+X        }
+X        else {
+X            if ((Display_accessable & INACCESSABLE_ONLY) &&
+X                    (sbuf.st_mode & S_IFMT) != S_IFDIR
+X#ifdef S_IFLNK
+X                 && (sbuf.st_mode & S_IFMT) != S_IFLNK
+X#endif
+X                                                        )
+X                return;
+X            if ((Display_accessable & INACCESSABLE_ONLY)
+X#ifdef S_IFLNK
+X                 && (sbuf.st_mode & S_IFMT) == S_IFLNK
+X#endif
+X                                                           )
+X                display = FALSE;
+X        }
+X    }
+X
+X    basename(name, sav_str);
+X
+X    /* inode/file size */
+X 
+X    *tmp = 0;
+X    if (Display_inode) 
+X        (void) sprintf(tmp, "%5d", sbuf.st_ino);
+X    
+X    if (Display_size) {
+X        /* Make our best guess here for the block size.  Allow the user */
+X        /* compiling the program to override any system constant by     */
+X        /* specifying the blocksize on the command line.   JB           */
+X 
+X#ifdef BLOCKSIZE
+X        long st_blocks = (BLOCKSIZE - 1 + sbuf.st_size) / BLOCKSIZE;
+X#else
+X# ifdef BSD
+X        long st_blocks = sbuf.st_blocks / BLK_MULTIPLE;
+X# else    
+X#  ifdef STD_BLK
+X        long st_blocks = (STD_BLK - 1 + sbuf.st_size) / STD_BLK;
+X#  else
+X#   ifdef BUFSIZ
+X        long st_blocks = (BUFSIZ - 1 + sbuf.st_size) / BUFSIZ;
+X#   else
+X        long st_blocks = (511 + sbuf.st_size) / 512;
+X#   endif
+X#  endif
+X# endif
+X#endif
+X
+X        if (*tmp)
+X            (void) sprintf(&tmp[strlen(tmp)], " %4d", st_blocks);
+X        else    
+X            (void) sprintf(tmp, "%4d", st_blocks);
+X 
+X    }
+X    if (*tmp) {
+X        Sort_offset = strlen(tmp) + 1;
+X        (void) sprintf(&tmp[strlen(tmp)], " %s", sav_str);
+X    }
+X    else
+X        (void) sprintf(tmp, "%s", sav_str);
+X    (void) strcpy(sav_str, tmp);
+X 
+X    mlen = strlen(sav_str);
+X
+X#ifndef LENS
+X    if (mlen > Maxlen)
+X        Maxlen = mlen;
+X#endif
+X
+X    switch (sbuf.st_mode & S_IFMT) {
+X
+X    case S_IFDIR:
+X        if (!Allfiles && sav_str[0] == '.' && Level != 0)
+X            break;
+X        if (cnt != 1)        /* dont store the dir name on entry */
+X            add_to_list(&Dirs, sav_str);
+X        /* never called - left for expansion to recursive     */
+X        /* searches of subdirectories. Right, re-write needed */
+X        /* in output facilities first...                      */
+X        if (Level++ == 0)
+X            directory(name);
+X#ifdef LENS
+X        if (mlen > Dirs.maxlen)
+X            Dirs.maxlen = mlen;
+X#endif
+X        break;
+X
+X    case S_IFREG:
+X        /* do not print .files unless enviromental variable */
+X        /* or option set.                                   */
+X        if (!Allfiles && sav_str[0] == '.')
+X            break;
+X        if (Executables
+X            && (sbuf.st_mode & (S_IXUSR | S_IXGRP | S_IXOTH))) {
+X            *(sav_str + mlen) = '*';
+X            ++mlen;
+X            *(sav_str + mlen) = '\0';
+X#ifndef LENS
+X            if (mlen > Maxlen)
+X                Maxlen = mlen;
+X#endif
+X        }
+X        add_to_list(&Fls, sav_str);
+X#ifdef LENS
+X        if (mlen > Fls.maxlen)
+X            Fls.maxlen = mlen;
+X#endif
+X        break;
+X
+X#ifdef S_IFCHR
+X    case S_IFCHR:
+X        if (!Allfiles && sav_str[0] == '.')
+X            break;
+X        add_to_list(&Chrs, sav_str);
+X#ifdef LENS
+X        if (mlen > Chrs.maxlen)
+X            Chrs.maxlen = mlen;
+X#endif
+X        break;
+X#endif
+X
+X#ifdef S_IFBLK
+X    case S_IFBLK:
+X        if (!Allfiles && sav_str[0] == '.')
+X            break;
+X        add_to_list(&Blks, sav_str);
+X#ifdef LENS
+X        if (mlen > Blks.maxlen)
+X            Blks.maxlen = mlen;
+X#endif
+X        break;
+X#endif
+X
+X#ifndef apollo
+X#ifdef S_IFIFO
+X    case S_IFIFO:
+X        if (!Allfiles && sav_str[0] == '.')
+X            break;
+X        add_to_list(&Fifos, sav_str);
+X#ifdef LENS
+X        if (mlen > Fifos.maxlen)
+X            Fifos.maxlen = mlen;
+X#endif
+X        break;
+X#endif
+X#endif
+X
+X#ifdef S_IFLNK
+X    case S_IFLNK:
+X        if (!Allfiles && sav_str[0] == '.')
+X            break;
+X        if (display)
+X            add_to_list(&Lnks, sav_str);
+X        link = getlink(name);
+X        if (display)
+X            add_to_list(&Lnksn, link);
+X        if (link != (char *) NULL)
+X            free(link);
+X#ifdef LENS
+X        if (mlen > Lnks.maxlen && display)
+X            Lnks.maxlen = mlen;
+X#endif
+X        if (stat(name, &sbuf) < 0) {
+X            if (!Ignore) 
+X                (void) fprintf(stderr,
+X                               "%s: %s: can't resolve symbolic link\n",
+X                               Progname, name);
+X        }
+X        else {
+X            if (display && Mark_links) {
+X                *(sav_str + mlen) = '@';
+X                ++mlen;
+X                *(sav_str + mlen) = '\0';
+X#ifndef LENS
+X                if (mlen > Maxlen)
+X                    Maxlen = mlen;
+X#endif
+X            }
+X
+X            if (display ||  (sbuf.st_mode & S_IFMT) == S_IFDIR)
+X                switch (sbuf.st_mode & S_IFMT) {
+X
+X            case S_IFDIR:
+X                if (cnt != 1)        /*dont store the dir name on entry */
+X                    add_to_list(&Dirs, sav_str);
+X                /* never called - left for expansion to recursive */
+X                /* searches of subdirectories                     */
+X                if (Level++ == 0)
+X                    directory(name);
+X#ifdef LENS
+X                if (mlen > Dirs.maxlen)
+X                    Dirs.maxlen = mlen;
+X#endif
+X                break;
+X
+X            case S_IFREG:
+X                if (Executables
+X                    && (sbuf.st_mode & (S_IXUSR | S_IXGRP | S_IXOTH))) {
+X                    *(sav_str + mlen) = '*';
+X                    ++mlen;
+X                    *(sav_str + mlen) = '\0';
+X#ifndef LENS
+X                    if (mlen > Maxlen)
+X                        Maxlen = mlen;
+X#endif
+X                }
+X                add_to_list(&Fls, sav_str);
+X#ifdef LENS
+X                if (mlen > Fls.maxlen)
+X                    Fls.maxlen = mlen;
+X#endif
+X                break;
+X
+X#ifdef S_IFCHR
+X            case S_IFCHR:
+X                add_to_list(&Chrs, sav_str);
+X#ifdef LENS
+X                if (mlen > Chrs.maxlen)
+X                    Chrs.maxlen = mlen;
+X#endif
+X                break;
+X#endif
+X
+X#ifdef S_IFBLK
+X            case S_IFBLK:
+X                add_to_list(&Blks, sav_str);
+X#ifdef LENS
+X                if (mlen > Blks.maxlen)
+X                    Blks.maxlen = mlen;
+X#endif
+X                break;
+X#endif
+X
+X#ifndef apollo
+X#ifdef S_IFIFO
+X            case S_IFIFO:
+X                add_to_list(&Fifos, sav_str);
+X#ifdef LENS
+X                if (mlen > Fifos.maxlen)
+X                    Fifos.maxlen = mlen;
+X#endif
+X                break;
+X#endif
+X#endif
+X
+X#ifdef S_IFSOCK
+X            case S_IFSOCK :
+X                add_to_list(&Socks, sav_str);
+X#ifdef LENS
+X                if (mlen > Socks.maxlen)
+X                    Socks.maxlen = mlen;
+X#endif
+X                break;
+X#endif
+X            }
+X        }
+X        break;
+X#endif
+X
+X#ifdef S_IFSOCK
+X    case S_IFSOCK:
+X        if (!Allfiles && sav_str[0] == '.')
+X            break;
+X        add_to_list(&Socks, sav_str);
+X#ifdef LENS
+X        if (mlen > Socks.maxlen)
+X            Socks.maxlen = mlen;
+X#endif
+X        break;
+X#endif
+X
+X#ifdef S_IFNAM
+X    case S_IFNAM:
+X        switch (sbuf.st_rdev) {
+X
+X        case S_INSEM:
+X            if (!Allfiles && sav_str[0] == '.')
+X                break;
+X            add_to_list(&Sems, sav_str);
+X#ifdef LENS
+X            if (mlen > Sems.maxlen)
+X                Sems.maxlen = mlen;
+X#endif
+X            break;
+X
+X        case S_INSHD:
+X            if (!Allfiles && sav_str[0] == '.')
+X                break;
+X            add_to_list(&Sds, sav_str);
+X#ifdef LENS
+X            if (mlen > Sds.maxlen)
+X                Sds.maxlen = mlen;
+X#endif
+X            break;
+X        }
+X        break;
+X#endif
+X
+X    }
+X    return;
+X}
+X
+X/* V A L I D _ O P T
+X *
+X * valid_opt() is used to translate user has supplied option
+X * letters into something that this process can use. It sets
+X * up the options and if a usage is requested, it sets up and
+X * prints a usage message for the user.
+X */
+X
+Xvoid valid_opt(c, usage)
+X    char c;
+X    int usage;
+X{
+X    char up[7];
+X
+X    up[0] = '\0';
+X
+X    switch(c) {
+X
+X    case 'a':
+X        Allfiles = TRUE;
+X        break;
+X
+X    case 'b':
+X        Only |= BLOCK_ONLY;
+X        break;
+X
+X    case 'B':
+X        Display_size = TRUE;
+X        break;
+X 
+X    case 'c':
+X        Only |= CHAR_ONLY;
+X        break;
+X
+X    case 'C':
+X        Sort_down = TRUE;
+X        break;
+X
+X    case 'd':
+X        Only |= DIR_ONLY;
+X        break;
+X
+X    case 'D':
+X        Display_single = FALSE;
+X        break;
+X
+X    case 'e':
+X        Executables = TRUE;
+X        break;
+X
+X    case 'f':
+X        Only |= FILE_ONLY;
+X        break;
+X
+X#ifndef apollo
+X# ifdef S_IFIFO
+X    case 'F':
+X        Only |= FIFO_ONLY;
+X        break;
+X# endif
+X#endif
+X
+X    case 'i':
+X        Display_inode = TRUE;
+X        break;
+X
+X#ifdef S_IFLNK
+X    case 's':
+X        Only |= LNK_ONLY;
+X        break;
+X
+X    case 'l':
+X        Mark_links = TRUE;
+X        break;
+X
+X    case 'I':
+X        Ignore = TRUE;
+X        break;
+X
+X    case 'L':
+X        Disp_links = TRUE;
+X        break;
+X#endif
+X
+X#ifdef S_IFNAM
+X    case 'm':
+X        Only |= SD_ONLY;
+X        break;
+X
+X    case 'M':
+X        Only |= SEM_ONLY;
+X        break;
+X#endif
+X
+X    case 'r':
+X        Sort_wanted = FALSE;
+X        break;
+X
+X#ifdef S_IFSOCK
+X    case 'S':
+X        Only |= SOCK_ONLY;
+X        break;
+X#endif
+X
+X    case '1':
+X        Single = TRUE;
+X        break;
+X
+X    case 'v':
+X        (void) fprintf(stderr,"%s:\t%s\n\tRelease: %d\n\tPatch level: %d\n",
+X                               Progname, sccsid, RELEASE, PATCHLEVEL);
+X        exit(1);
+X	/*NOTREACHED*/
+X
+X  case 'x':
+X        Display_accessable += ACCESSABLE_ONLY;
+X        break;
+X 
+X    case 'X':
+X        Display_accessable += INACCESSABLE_ONLY;
+X        break;
+X
+X    default:
+X        if (usage == TRUE) {
+X#ifdef S_IFLNK
+X            (void) strcat(up, "IlLs");
+X#endif
+X#ifdef S_IFSOCK
+X            (void) strcat(up, "S");
+X#endif
+X#ifdef S_IFNAM
+X            (void) strcat(up, "mM");
+X#endif
+X            (void) fprintf(stderr,
+X                    "usage: %s [-abBcCdDefFivxX1%s] [directories or files]\n",
+X                     Progname, up);
+X            exit(1);
+X        }
+X    }
+X
+X    return;
+X}
+X
+X/* S E T _ E N V _ V A R S
+X *
+X * set_env_vars() is used get the environment variables that
+X * lc uses. The environment variable LC can be used to setup
+X * the default way in which the user likes to see a directory
+X * listing. Command line options override those specified in
+X * the environment.
+X */
+X
+Xvoid set_env_vars()
+X{
+X    char *ep;
+X
+X    if ((ep = getenv("COLS")) != (char *) NULL) {
+X        if (sscanf(ep, "%d", &Screen_width) == 0
+X            || (Screen_width != 80 && Screen_width != 132))
+X            Screen_width = 80;
+X    }
+X
+X    if ((ep = getenv("LC")) != (char *) NULL) {
+X        while (*ep != '\0') {
+X            valid_opt(*ep, FALSE);
+X            ep++;
+X        }
+X    }
+X
+X    return;
+X}
+X
+X/* S P D I S T:   return the distance between two names
+X *
+X * very rough spelling metric:
+X *          0 if the strings are identical
+X *          1 if two chars are transposed
+X *          2 if 1 char wrong, added or deleted
+X *          3 otherwise
+X */
+X#define EQ(s, t) (strcmp(s, t) == 0)
+X
+Xint spdist(s, t)
+X    char *s;
+X    char *t;
+X{
+X    while (*s++ == *t) {
+X        if (*t++ == '\0')
+X            return 0;             /* exact match */
+X    }
+X    if (*--s) {
+X        if (*t) {
+X            if (s[1] && t[1] && *s == t[1] && *t == s[1] && EQ(s+2, t+2))
+X                return 1;             /* transposition */
+X            if (EQ(s+1, t+1))
+X                return 2;             /* 1 char mismatch */
+X        }
+X        if (EQ(s+1, t))
+X            return 2;                /* extra chacter */
+X    }
+X    if (*t && EQ(s, t+1))
+X        return 2;                   /* missing character */
+X    return 3;
+X}
+X
+X/*    M I N D I S T       
+X * 
+X *  mindist() searches the directory for the best guess
+X *  in the event the requested file was not located.
+X */
+X
+X#if (POSIX || BSD)
+Xint mindist(dir, guess, best)    /* set best, return distance 0..3 */
+X    char *dir;
+X    char *guess;
+X    char *best;
+X{
+X    DIR *dfd;
+X    int d;
+X    int nd;
+X#ifdef DIRECT
+X    struct direct *dp;
+X#else
+X    struct dirent *dp;
+X#endif
+X
+X    if (dir[0] == '\0')
+X        dir = ".";
+X    d = 3;                      /* minimum distance */
+X
+X    if ((dfd = opendir(dir)) == NULL)
+X        return d;
+X
+X    while ((dp = readdir(dfd)) != NULL) {
+X        if (dp->d_ino) {
+X            nd = spdist(dp->d_name, guess);
+X            if (nd <= d && nd != 3) {
+X                (void) strcpy(best, dp->d_name);
+X                d = nd;
+X                if (d == 0)    /* exact match */
+X                    break;
+X            }
+X        }
+X    }
+X    (void) closedir(dfd);
+X    return d;
+X}
+X
+X#else /* not POSIX or BSD */
+X
+X/*    M I N D I S T       
+X * 
+X *  mindist() searches the directory for the best guess
+X *  in the event the requested file was not located.
+X */
+X
+Xint mindist(dir, guess, best)    /* set best, return distance 0..3 */
+X    char *dir;
+X    char *guess;
+X    char *best;
+X{
+X    FILE *fd;
+X    int d;
+X    int nd;
+X    struct {
+X        ino_t ino;
+X        char name[NAME_MAX + 1];   /* 1 more than in dir.h */
+X    } nbuf;
+X
+X    nbuf.name[NAME_MAX] = '\0';   /* +1 for terminal '\0' */
+X    if (dir[0] == '\0')
+X        dir = ".";
+X    d = 3;                      /* minimum distance */
+X    if ((fd = fopen(dir, "r")) == (FILE *) NULL)
+X        return d;
+X    while (fread((char *) &nbuf, sizeof(struct direct), 1, fd) > 0) {
+X        if (nbuf.ino) {
+X            nd = spdist(nbuf.name, guess);
+X            if (nd <= d && nd != 3) {
+X                (void) strcpy(best, nbuf.name);
+X                d = nd;
+X                if (d == 0)    /* exact match */
+X                    break;
+X            }
+X        }
+X    }
+X    (void) fclose(fd);
+X    return d;
+X}
+X#endif
+X
+X/* S P N A M E:    return correctly spelled filename
+X *
+X * spname(oldname, newname) char *oldname, *newname;
+X *      returns  -1 if no reasonable match to oldname,
+X *                0 if exact match,
+X *                1 if corrected.
+X * stores corrected name in newname.
+X */
+X
+Xint spname(oldname, newname)
+X    char *oldname;
+X    char *newname;
+X{
+X    char *new = newname;
+X    char *old = oldname;
+X    char *p;
+X    char best[NAME_MAX + 1];
+X    char guess[NAME_MAX + 1];
+X
+X    for (;;) {
+X        while (*old == '/')   /* skip slashes */
+X            *new++ = *old++;
+X        *new = '\0';
+X        if (*old == '\0')     /* exact or corrected */
+X            return (strcmp(oldname, newname) != 0);
+X        p = guess;            /* copy next component into guess */
+X        for (/* void */ ; *old != '/' && *old != '\0'; old++) {
+X            if (p < (guess + NAME_MAX))
+X                *p++ = *old;
+X        }
+X        *p = '\0';
+X        if (mindist(newname, guess, best) >= 3)
+X            return (-1);        /* hopeless */
+X        for (p = best; *new = *p++; new++)   /* add to end */
+X            /* void */;
+X    }
+X}
+X
+X/*  I N _ C D P A T H
+X *
+X *  in_cdpath() searches the CDPATH stored in the environment
+X *  for the filename specified. If it is found, fill the
+X *  storage area refered to by buffer with the corrected path.
+X *  Return TRUE if located and FALSE if not located in the CDPATH.
+X */
+X 
+Xint in_cdpath(requested_dir, buffer, check_spelling)
+X    char *requested_dir;
+X    char *buffer;
+X    int  check_spelling; 
+X{
+X    static char *cdpath;
+X    static int first = 1;
+X
+X    char *cp;
+X    char *path;
+X    char patbuf[BUFSIZE + 1];
+X    int quit;
+X
+X    if (first) {
+X        if ((cdpath = getenv("CDPATH")) != (char *) NULL)
+X            cdpath = str_sav(cdpath);
+X        first = 0;
+X    }   
+X
+X    if (cdpath == (char *) NULL)
+X        return (0);
+X
+X    (void) strcpy(patbuf, cdpath);
+X    path = patbuf;
+X
+X    quit = 0;
+X
+X    while (!quit) {
+X        cp = strchr(path, ':');
+X        if (cp == (char *) NULL)
+X            quit++;
+X        else
+X            *cp = '\0';
+X 
+X        if (*(path + 1) == '\0' && *path == '/')
+X            (void) sprintf(buffer, "/%s", requested_dir);
+X        else
+X            (void) sprintf(buffer, "%s/%s",
+X                           (*path ? path : "."), requested_dir);
+X 
+X        if (access(buffer, 0) == 0)
+X            return (TRUE);
+X 
+X        if (check_spelling)
+X        {
+X            char bfr[BUFSIZ + 1];
+X            (void) strcpy(bfr, buffer);
+X            if (spname(bfr, buffer) == 1)
+X                return (TRUE);
+X        }
+X        
+X        path = ++cp;
+X    }
+X    return (FALSE);
+X}
+X
+X
+X/*  M A I N 
+X * 
+X *  Ye olde main();
+X */
+X
+Xint main(argc, argv)
+X    int argc;
+X    char *argv[];
+X{
+X    char *argp;
+X#ifdef S_IFLNK
+X    char *link;
+X    int lnk_found;
+X#endif
+X    char buf[BUFSIZE + 1];
+X    int idx;
+X    int nl;
+X    struct stat sbuf;
+X
+X    nl = idx = FALSE;
+X
+X    /* get the base name of the command */
+X
+X    if ((Progname = strrchr(argv[0], '/')) == (char *) NULL) 
+X        Progname = argv[0];
+X    else
+X        ++Progname;
+X
+X    set_env_vars();                       /* get environment variables */
+X
+X    /* All command line arguments must be */
+X    /* lumped together such as `lc -aef`  */
+X
+X    if (argc > 1 && argv[1][0] == '-') {  /* if first parm is command */
+X        argp = argv[1];
+X
+X        while (*(++argp))
+X            valid_opt(*argp, TRUE);
+X
+X        ++argv;
+X        --argc;
+X    }
+X
+X    /*
+X    ** The user has not specified a file or directory 
+X    ** to be examined so assume that the current directory
+X    ** is what the user is requesting.
+X    */
+X    if (argc == 1) {
+X        (void) strcpy(buf, ".");
+X        lc(buf, 1);
+X        print_info();
+X        return(0);
+X    }
+X
+X    /*
+X    ** The user has specified at least one file or 
+X    ** directory to be examined.
+X    */
+X    if (argc > 2)
+X        nl = TRUE;
+X    while (--argc > 0) {
+X        ++argv;
+X        (void) strcpy(buf, *argv);
+Xskipit:
+X#ifdef S_IFLNK
+X        lnk_found = 0;
+X        if (lstat(buf, &sbuf) == -1) {
+X            lnk_found = 1;
+X#else
+X        if (stat(buf, &sbuf) == -1) {
+X#endif
+X            if (in_cdpath(*argv, buf, FALSE) ||   /* Look for it in CDPATH */
+X                (spname(*argv, buf) != -1)   ||   /* Look for it mispelled */
+X                in_cdpath(*argv, buf, TRUE)) {    /* Mispelled in CDPATH ? */
+X                /*
+X                 ** Check to see if the requested is in the CDPATH
+X                 ** and if not try to correct for typos. If that fails
+X                 ** then check for typos in the CDPOATH. Always print
+X                 ** the name of what was found...
+X                 */
+X
+X                nl = TRUE;
+X                goto skipit;
+X            }
+X#ifdef S_IFLNK
+X            else if (lnk_found) 
+X                (void) fprintf(stderr,"%s: %s: can't resolve symbolic link\n",
+X                               Progname, *argv);
+X#endif 
+X            else 
+X                (void)fprintf(stderr, "%s: can't find %s\n",
+X                              Progname, *argv);
+X        }
+X        else {
+X#ifdef S_IFLNK
+X            if ((sbuf.st_mode & S_IFMT) == S_IFLNK)
+X                (void) stat(buf, &sbuf);
+X            /*
+X            ** No need to check return code here: if stat() fails use
+X            ** the sbuf retrieved with lstat() earlier.
+X            */
+X#endif
+X            switch (sbuf.st_mode & S_IFMT) {
+X
+X            case S_IFREG:
+X                if (Display_single)
+X                   (void) printf("%s: file\n", buf);
+X                break;
+X
+X#ifdef S_IFCHR
+X            case S_IFCHR:
+X                if (Display_single)
+X                   (void) printf("%s: character special file\n", buf);
+X                break;
+X#endif
+X
+X#ifdef S_IFBLK
+X            case S_IFBLK:
+X                if (Display_single)
+X                   (void) printf("%s: block special file\n", buf);
+X                break;
+X#endif
+X
+X#ifndef apollo
+X#ifdef S_IFIFO
+X            case S_IFIFO:
+X                if (Display_single)
+X                   (void) printf("%s: fifo file\n", buf);
+X                break;
+X#endif
+X#endif
+X
+X#ifdef S_IFSOCK
+X            case S_IFSOCK:
+X                if (Display_single)
+X                   (void) printf("%s: socket file\n", buf);
+X                break;
+X#endif
+X
+X#ifdef S_IFLNK
+X            case S_IFLNK:
+X                if (Display_single) {
+X                   if ((link = getlink(buf)) != (char *) NULL) {
+X                       (void) printf("%s: symbolic link to %s\n", buf,link);
+X                       free(link);
+X                   }
+X                   else
+X                       (void) printf("%s: unresolved symbolic link\n", buf);
+X                }
+X                break;
+X#endif
+X
+X#ifdef S_IFNAM
+X            case S_IFNAM:
+X                if (Display_single) {
+X                   if (sbuf.st_rdev == S_INSHD)
+X                       (void) printf("%s: shared memory file\n", buf);
+X                   if (sbuf.st_rdev == S_INSEM)
+X                       (void) printf("%s: semaphore file\n", buf);
+X                }
+X                break;
+X#endif
+X
+X            case S_IFDIR:
+X                Maxlen = Level = 0;
+X#ifdef S_IFBLK
+X                Blks.num = 0;
+X#ifdef LENS
+X                Blks.maxlen = 0;
+X#endif
+X#endif
+X
+X#ifdef S_IFCHR
+X                Chrs.num = 0;
+X#ifdef LENS
+X                Chrs.maxlen = 0;
+X#endif
+X#endif
+X
+X                Dirs.num = Fls.num = 0;
+X#ifdef LENS
+X                Dirs.maxlen = Fls.maxlen = 0;
+X#endif
+X
+X#ifndef apollo
+X#ifdef S_IFIFO
+X                Fifos.num = 0;
+X#ifdef LENS
+X                Fifos.maxlen = 0;
+X#endif
+X#endif
+X#endif
+X
+X#ifdef S_IFLNK
+X                Lnks.num = Lnksn.num = 0;
+X#ifdef LENS
+X                Lnks.maxlen = Lnksn.maxlen = 0;
+X#endif
+X#endif
+X
+X#ifdef S_IFSOCK
+X                Socks.num = 0;
+X#ifdef LENS
+X                Socks.maxlen = 0;
+X#endif
+X#endif
+X
+X#ifdef S_IFNAM
+X                Sds.num = Sems.num = 0;
+X#ifdef LENS
+X                Sds.maxlen = Sems.maxlen = 0;
+X#endif
+X#endif
+X
+X                if (nl == TRUE) {
+X                    if (idx > 0)
+X                        (void) puts("");
+X                    else
+X                        ++idx;
+X                    (void) fputs(": ", stdout);
+X                    (void) fputs(buf, stdout);
+X                    (void) puts(" :");
+X                }
+X                lc(buf, 1);
+X                print_info();
+X                break;
+X
+X            default:
+X                (void) printf("%s: unknown file type\n", buf);
+X                break;
+X            }
+X        }
+X    }
+X    return(0);
+X}
+END_OF_FILE
+  if test 42153 -ne `wc -c <'lc.c'`; then
+    echo shar: \"'lc.c'\" unpacked with wrong size!
+  fi
+  # end of 'lc.c'
+fi
+echo shar: End of archive 2 \(of 2\).
+cp /dev/null ark2isdone
+MISSING=""
+for I in 1 2 ; do
+    if test ! -f ark${I}isdone ; then
+	MISSING="${MISSING} ${I}"
+    fi
+done
+if test "${MISSING}" = "" ; then
+    echo You have unpacked both archives.
+    rm -f ark[1-9]isdone
+else
+    echo You still must unpack the following archives:
+    echo "        " ${MISSING}
+fi
+exit 0
+exit 0 # Just in case...
