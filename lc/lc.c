@@ -845,7 +845,7 @@ void lc(name, cnt)
  
     *tmp = 0;
     if (Display_inode) 
-        (void) sprintf(tmp, "%5d", sbuf.st_ino);
+        (void) sprintf(tmp, "%5ld", (long)sbuf.st_ino);
     
     if (Display_size) {
         /* Make our best guess here for the block size.  Allow the user */
@@ -871,9 +871,9 @@ void lc(name, cnt)
 #endif
 
         if (*tmp)
-            (void) sprintf(&tmp[strlen(tmp)], " %4d", st_blocks);
+            (void) sprintf(&tmp[strlen(tmp)], " %4ld", (long)st_blocks);
         else    
-            (void) sprintf(tmp, "%4d", st_blocks);
+            (void) sprintf(tmp, "%4ld", (long)st_blocks);
  
     }
     if (*tmp) {
