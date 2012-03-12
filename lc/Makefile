@@ -27,6 +27,8 @@ RPTSIZ = -DBLK_MULTIPLE=2
 # If you want to specify the block size here uncomment the following line:
 #BLKSIZE = -DBLOCKSIZE=512
 
+FLAGS = -DPOSIX
+
 # If you are running on a BSD 4.2 box:
 # (note - if compiling on a sequent in att environment...`ucb make -f lc.mk`)
 # FLAGS = -DBSD -DDIRECT
@@ -34,7 +36,7 @@ RPTSIZ = -DBLK_MULTIPLE=2
 #
 # If you are running on a BSD (4.3 or later), SunOS (4.0 or later),
 # HPUX or Ultrix (3.0 or later) box:
-FLAGS = -DBSD
+# FLAGS = -DBSD
 #         or
 #
 # If you are running Silicon Graphics such as the SGI Personal Iris:
