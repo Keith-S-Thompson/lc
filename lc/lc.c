@@ -78,6 +78,9 @@ static char *sccsid = "@(#)lc.c	1.37 10/18/92 Kent Landfield";
 #  include <limits.h>
 #  include <dirent.h>
 #  include <stdlib.h>
+#  include <curses.h>
+#  include <term.h>
+#  include <unistd.h>
 #else
 #  ifdef BSD
 #    ifdef DIRECT
@@ -804,10 +807,10 @@ void lc(name, cnt)
     if (Display_accessable &&
         Display_accessable != (ACCESSABLE_ONLY | INACCESSABLE_ONLY)) {   
         static int first = 1;
-        static int uid;
-        static int euid;
-        static int gid;
-        static int egid;
+        static uid_t uid;
+        static uid_t euid;
+        static gid_t gid;
+        static gid_t egid;
 
         if (first) {
             first = 0;
