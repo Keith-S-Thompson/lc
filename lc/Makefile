@@ -79,8 +79,8 @@ OPTIM=-O
 #
 TCAP=-DTCAP
 #TERMLIB=-ltermcap
-#TERMLIB=-lcurses
-TERMLIB=-ltermlib
+TERMLIB=-lcurses
+#TERMLIB=-ltermlib
 
 # Are the directory routines in another library ?
 # Or do you wish to use shared libraries ?
