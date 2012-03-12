@@ -1,22 +1,28 @@
 
 			LC
 
-		"@(#)README	1.3 9/7/90 Kent Landfield"
+		"@(#)README	1.4 1/8/91 Kent Landfield"
 
 This directory contains the source to lc. lc is much like the ls 
 command except it separates the types of files into groups and then
 displays located file names to the user is a columnar fashion. 
 
-lc was initially implemented by myself after I became accustomed
-to the lc command on a Mark Williams Coherent system I was running back
-in 1984.  When I started moving to different systems I found that I did
-not like the lack of information, flexibility and the general display 
-that ls provided.  I have found that I am not the only one that has 
-become feed up with ls and its jumbled output. All the people here use 
-lc much more than they use ls. It is a locally well known fact that when
-a new machine comes into the house, the first local software that is put 
-on the machine is lc.  It is far from perfect but it is better than ls on 
-a general use basis.
+"lc"'s history goes back to 1978 when it was originally developed at the
+University of Waterloo on a Honeywell 66/60 system. It became so popular 
+that it was ported to Waterloo's V7 Unix systems shortly thereafter.  
+This version is a complete re-implementation of lc and contains no 
+University of Waterloo code.
+
+This version of lc was initially implemented by myself after I became 
+accustomed to the lc command on a Mark Williams Coherent system I was 
+running back in 1984.  When I started moving to different systems I 
+found that I did not like the lack of information, flexibility and the 
+general display that ls provided.  I have found that I am not the only 
+one that has become feed up with ls and its jumbled output. All the 
+people here use lc much more than they use ls. It is a locally well 
+known fact that when a new machine comes into the house, the first local 
+software that is put on the machine is lc.  It is far from perfect but 
+it is better than ls on a general use basis. 
 
 lc uses three different environment variables COLS, CDPATH, and LC
 allowing you to customize how you wish lc to perform on a default 
@@ -59,12 +65,12 @@ done each time lc is executed.
         -l      Mark symbolic links with '@'
         -I      Suppress unresolved symbolic link messages.
   
-   The "only" options can not be combined.
+   The "only" options can be combined.
 
    If there is no 'directory' specified, the current directory is used.
 
    Not all options are supported on every system. (e.g. no symbolic links
-   on your system ? Options -s, -L or -l won't be available..)
+   on your system ? Options -s, -I -L or -l won't be available..)
    If your system does not support shared memory name space entry files, 
    then you cannot use the -m option...
 
@@ -87,6 +93,9 @@ History:
       Tested with SunOS 4.0.3 on a Sparkstation 1 in 1989.
       Tested with UTek on a Tektronix XD8810 in 1989.
       Tested with AIX 3.+ on a Risc System/6000 in 1990.
+      Ivan Fris added the ability to combine "only" options in 1990.
+      Mike Peterson ported it to the Apollo Domain/OS SR10.2 in 1990.
+
 
 The following is a todo list that may get done someday...
 
@@ -95,14 +104,13 @@ The following is a todo list that may get done someday...
 2. Need to modify lc so that one environment (or compile) option will
    only let you see files you own or have access to.
 3. Add spell checking code to CDPATH usage
-4. Allow combination of only options...
                                                         
                           *PLEASE!* 
 If you have a problem, there's someone else out there who either has
 had or will have the same problem.  Please send all "lc" ideas, patches, 
 etc to 
 
-INTERNET: kent@sparky.IMD.Sterling.COM or UUCP: uunet!ssbell!sparky!kent
+INTERNET: kent@sparky.IMD.Sterling.COM or UUCP: uunet!sparky!kent
 
 so that I can continue to improve the functionality and portability of lc.
 

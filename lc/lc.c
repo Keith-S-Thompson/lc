@@ -48,7 +48,7 @@
 **               -l      Mark symbolic links with '@'
 **               -I      Suppress unresolved symbolic link messages.
 **
-** The "only" options can not be combined.
+** The "only" options can be combined.
 ** If there is no 'directory' specified, the current directory is used.
 ** Not all options are supported on every system. (e.g. no symbolic links
 ** on your system ? Options -s, -L or -l won't be available..)
@@ -70,10 +70,11 @@
 **      Tested with AmigaDOS 1.3 on an Amiga 1000 in 1989.
 **      Tested with SunOS 4.0.3 on a Sparkstation 1 in 1989.
 **      Tested with AIX 3.+ on a Risc System/6000 in 1990. 
+**      Ivan Fris added the ability to combine "only" options.
 **                                                               
 */
 #ifndef lint
-static char *sccsid = "@(#)lc.c	1.23 9/7/90  Kent Landfield";
+static char *sccsid = "@(#)lc.c	1.25 1/2/91  Kent Landfield";
 #endif
 
 #include <stdio.h>
@@ -143,26 +144,26 @@ static char *sccsid = "@(#)lc.c	1.23 9/7/90  Kent Landfield";
 #  define S_IXOTH       (S_IEXEC >> 6)
 #endif
 
-#define DIR_ONLY        1
-#define FILE_ONLY       2
+#define DIR_ONLY        1<<0
+#define FILE_ONLY       1<<2
 #ifdef S_IFCHR
-#  define CHAR_ONLY     3
+#  define CHAR_ONLY     1<<3
 #endif
 #ifdef S_IFBLK
-#  define BLOCK_ONLY    4
+#  define BLOCK_ONLY    1<<4
 #endif
 #ifdef S_IFIFO
-#  define FIFO_ONLY     5
+#  define FIFO_ONLY     1<<5
 #endif
 #ifdef S_IFLNK
-#  define LNK_ONLY      6
+#  define LNK_ONLY      1<<6
 #endif
 #ifdef S_IFSOCK
-#  define SOCK_ONLY     7
+#  define SOCK_ONLY     1<<7
 #endif
 #ifdef S_IFNAM
-#  define SEM_ONLY      8
-#  define SD_ONLY       9
+#  define SEM_ONLY      1<<8
+#  define SD_ONLY       1<<9
 #endif
 
 #ifdef BSD
@@ -499,6 +500,9 @@ int print_line(files, ind)
               ind++;
          }
          *frmt = '\0';
+         while (*--frmt == ' ')  /* strip trailing blanks */
+             *frmt = '\0';
+        
          (void) puts(out_str);
     }
     return (ind);
@@ -576,7 +580,7 @@ void print_info()
 
     Current = 0;
 
-    if (Lnks.num > 0 && (Disp_links == TRUE || Only == LNK_ONLY)) {
+    if (Lnks.num > 0 && (Disp_links == TRUE || Only & LNK_ONLY)) {
         ssing = Single;
         Single = TRUE;
         Current = LNK_ONLY;
@@ -586,37 +590,37 @@ void print_info()
 #endif
 
 #ifdef S_IFSOCK
-    if (Socks.num > 0 && (Only == 0 || Only == SOCK_ONLY))
+    if (Socks.num > 0 && (Only == 0 || Only & SOCK_ONLY))
         flag = pr_info("Sockets: ", &Socks, flag, Sort_wanted);
 #endif
 
 #ifdef S_IFNAM
-    if (Sems.num > 0 && (Only == 0 || Only == SEM_ONLY))
+    if (Sems.num > 0 && (Only == 0 || Only & SEM_ONLY))
         flag = pr_info("Semaphore Files: ", &Sems, flag, Sort_wanted);
 
-    if (Sds.num > 0 && (Only == 0 || Only == SD_ONLY))
+    if (Sds.num > 0 && (Only == 0 || Only & SD_ONLY))
         flag = pr_info("Shared Data Files: ", &Sds, flag, Sort_wanted);
 #endif
 
 #ifdef S_IFIFO
-    if (Fifos.num > 0 && (Only == 0 || Only == FIFO_ONLY))
+    if (Fifos.num > 0 && (Only == 0 || Only & FIFO_ONLY))
         flag = pr_info("Fifo Files: ", &Fifos, flag, Sort_wanted);
 #endif
 
 #ifdef S_IFCHR
-    if (Chrs.num > 0 && (Only == 0 || Only == CHAR_ONLY))
+    if (Chrs.num > 0 && (Only == 0 || Only & CHAR_ONLY))
         flag = pr_info("Character Special Files: ", &Chrs, flag, Sort_wanted);
 #endif
 
 #ifdef S_IFBLK
-    if (Blks.num > 0 && (Only == 0 || Only == BLOCK_ONLY))
+    if (Blks.num > 0 && (Only == 0 || Only & BLOCK_ONLY))
         flag = pr_info("Block Special Files: ", &Blks, flag, Sort_wanted);
 #endif
 
-    if (Dirs.num > 0 && (Only == 0 || Only == DIR_ONLY))
+    if (Dirs.num > 0 && (Only == 0 || Only & DIR_ONLY))
         flag = pr_info("Directories: ", &Dirs, flag, Sort_wanted);
 
-    if (Fls.num > 0 && (Only == 0 || Only == FILE_ONLY))
+    if (Fls.num > 0 && (Only == 0 || Only & FILE_ONLY))
         flag = pr_info("Files: ", &Fls, flag, Sort_wanted);
 
     return;
@@ -976,15 +980,15 @@ void valid_opt(c, usage)
         break;
 
     case 'b':
-        Only = BLOCK_ONLY;
+        Only |= BLOCK_ONLY;
         break;
 
     case 'c':
-        Only = CHAR_ONLY;
+        Only |= CHAR_ONLY;
         break;
 
     case 'd':
-        Only = DIR_ONLY;
+        Only |= DIR_ONLY;
         break;
 
     case 'D':
@@ -996,7 +1000,7 @@ void valid_opt(c, usage)
         break;
 
     case 'f':
-        Only = FILE_ONLY;
+        Only |= FILE_ONLY;
         break;
 
     case 'r':
@@ -1005,7 +1009,7 @@ void valid_opt(c, usage)
 
 #ifdef S_IFIFO
     case 'F':
-        Only = FIFO_ONLY;
+        Only |= FIFO_ONLY;
         break;
 #endif
 
@@ -1015,7 +1019,7 @@ void valid_opt(c, usage)
 
 #ifdef S_IFLNK
     case 's':
-        Only = LNK_ONLY;
+        Only |= LNK_ONLY;
         break;
 
     case 'l':
@@ -1033,17 +1037,17 @@ void valid_opt(c, usage)
 
 #ifdef S_IFSOCK
     case 'S':
-        Only = SOCK_ONLY;
+        Only |= SOCK_ONLY;
         break;
 #endif
 
 #ifdef S_IFNAM
     case 'm':
-        Only = SD_ONLY;
+        Only |= SD_ONLY;
         break;
 
     case 'M':
-        Only = SEM_ONLY;
+        Only |= SEM_ONLY;
         break;
 #endif
 

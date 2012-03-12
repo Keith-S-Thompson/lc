@@ -1,4 +1,4 @@
-.\" @(#)lc.1	1.1 9/7/90 Kent Landfield;
+.\" @(#)lc.1	1.2 1/8/91 Kent Landfield;
 .TH LC 1 "Usenet Source"
 .SH NAME
 .B lc 
@@ -46,7 +46,7 @@ in the current directory. This is an extremely handy feature of
 is used to switch the column width between 80 and 132 column display.
 .PP
 .B lc 
-has incorporated the minimal the spell checking routines found in the book,
+has incorporated the minimal spell checking routines found in the book,
 The UNIX Programming Environment, by Brian Kernighan and Rob Pike.  
 .PP
 If the command line argument list contains more than one name, the 
@@ -127,7 +127,7 @@ List AF_UNIX socket files only.
 .IP "-1"
 List files one per line instead of in columns.
 .SH DIAGNOSTICS
-The "only" options can not be combined at this time.
+The "only" options can be combined.
 .PP
 The spell checking does not work when the CDPATH is searched for a
 file or directory not found in the current directory.
@@ -142,6 +142,19 @@ works just fine when recursion is needed.
 .SH AUTHOR
 Kent Landfield <kent@sparky.IMD.Sterling.COM>
 .SH CREDITS
-Jeff Minnig <jeff@dsndata> and Rick Ohnemus <rick@sparky.IMD.Sterling.COM> 
-were a *great* help with this program at different stages of its development...
-Thanks!
+
+.nr
+Jeff Minnig <jeff@dsndata>, 
+.nf
+.nr
+Rick Ohnemus <rick@sparky.IMD.Sterling.COM>, 
+.nf
+.nr
+Mike Peterson <root@alchemy.chem.utoronto.ca> and
+.nf
+.nr
+Ivan Fris <neumann.une.oz.au!ivan> 
+.nf
+.nf
+were a *great* help with this program at different stages 
+of its development...  Thanks!
