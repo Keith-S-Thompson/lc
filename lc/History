@@ -1,0 +1,58 @@
+#
+# @(#)History	1.2 8/6/92
+#
+#  This file is a running history of the lc command.
+#
+#  This file is not meant to describe every system that lc runs on
+#  just those that were important at the time.
+#
+History:
+      1984:
+      =====
+      Initially designed on an IBM-XT running Coherent in 1984.
+      Ported to XENIX on an IBM-AT.
+
+      1985:
+      =====
+      Ported to System V on AT&T 3Bs in 1985.
+
+      1986:
+      =====
+      Ported to DEC Vax 11/750 running System V.
+      Ported to BSD4.2 on a Sequent Balance 8000.
+      Jeff Minnig added the initial support for links.  Good Job Jeff!
+
+      1988:
+      =====
+      Ported to SunOS 4.0 on a Sun 3/60.
+      Rick Ohnemus did major surgery to remove static storage
+      and *greatly* enhanced the link support. Thanks Rick!
+
+      1989:
+      =====
+      Tested with Ultrix 3.0 & 3.1 on a DECstation 3100.
+      Tested with Ultrix 3.0 & 3.1 on a VAXstation 3500.
+      Ported to AIX 2.2 on an IBM RT.
+      Tested with UTek on a Tektronix 4319.
+      Tested with IRIX System V on a Silicon Graphics Iris 4D/210GTX.
+      Tested with AmigaDOS 1.3 on an Amiga 1000.
+      Tested with SunOS 4.0.3 on a Sparkstation 1.
+      Tested with UTek on a Tektronix XD8810.
+
+      1990:
+      =====
+      Tested with AIX 3.+ on a Risc System/6000.
+      Ivan Fris added the ability to combine "only" options.
+      Mike Peterson ported it to the Apollo Domain/OS SR10.2.
+
+      1992:
+      =====
+      - Tim Goodwin fixed a bug concerning unresolved symbolic links which
+        were specified on the command line.
+  
+      - Jonthan Bayer added the ability to display block sizes with the files,
+          added the ability to display inodes with the files,
+          added the ability to sort the files by column,
+          added the ability to display file which are inaccessible,
+          added the ability to display only those files accessible by the user,
+          added spell checking to the CDPATH.  Fantastic additions Jonathan!!

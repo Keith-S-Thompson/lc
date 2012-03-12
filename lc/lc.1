@@ -1,4 +1,4 @@
-.\" @(#)lc.1	1.2 1/8/91 Kent Landfield;
+.\" @(#)lc.1	1.7 8/7/92 Kent Landfield;
 .TH LC 1 "Usenet Source"
 .SH NAME
 .B lc 
@@ -6,7 +6,7 @@
 .SH SYNOPSIS
 .B lc
 [
-.B \-abcdDefFIlLmMrsS1
+.B \-abBcCdDefFiIlLmMrsS1xX
 ]
 [ directory ... ]
 .SH DESCRIPTION
@@ -18,12 +18,13 @@ are printed in alphabetical order.  They are normally printed
 column-wise across the screen, preceded by a title indicating
 the type. The
 .B \-1
-option can be used to force single-column untitled output.
+option can be used to force single-column untitled output, and the
+.B \-C
+option can be used to print column-wise down the screen.
 .PP
 .B lc
 uses the environment variables
-.B LC
-,
+.B LC,
 .B CDPATH 
 and
 .B COLS 
@@ -46,7 +47,7 @@ in the current directory. This is an extremely handy feature of
 is used to switch the column width between 80 and 132 column display.
 .PP
 .B lc 
-has incorporated the minimal spell checking routines found in the book,
+has incorporated the minimal the spell checking routines found in the book,
 The UNIX Programming Environment, by Brian Kernighan and Rob Pike.  
 .PP
 If the command line argument list contains more than one name, the 
@@ -84,8 +85,12 @@ they give you no real additional information and would just clutter
 up the display.
 .IP "-b"
 List block special files only.
+.IP "-B"
+Display the file size in blocks along with the file name.
 .IP "-c"
 List character special files only.
+.IP "-C"
+Sort by column.
 .IP "-d"
 List directories only.
 .IP "-D"
@@ -101,6 +106,8 @@ displayed with a '*' appended to the end of the file name.
 List regular files only.
 .IP "-F"
 List fifo files only.
+.IP "-i"
+Display the inode number along with the file name.
 .IP "-I"
 Do not report unresolved symbolic link messages. Normally
 .B lc
@@ -126,11 +133,16 @@ List symbolic links only.
 List AF_UNIX socket files only.
 .IP "-1"
 List files one per line instead of in columns.
+.IP "-v"
+Print the software's version information.
+.IP "-x"
+Only display those files and directories which are either owned by the user or
+accessible by the user.
+.IP "-X"
+Display those files which are inaccessible.  All directories will be
+displayed, thereby allowing the user to see unavailable files inside the
+directories.
 .SH DIAGNOSTICS
-The "only" options can be combined.
-.PP
-The spell checking does not work when the CDPATH is searched for a
-file or directory not found in the current directory.
 .PP
 .B lc
 does not support recursion but I have never found this to
@@ -140,21 +152,21 @@ be that necessary to put in.
 .nf
 works just fine when recursion is needed.
 .SH AUTHOR
-Kent Landfield <kent@sparky.IMD.Sterling.COM>
+Kent Landfield <kent@sterling.com>
 .SH CREDITS
-
 .nr
-Jeff Minnig <jeff@dsndata>, 
-.nf
-.nr
-Rick Ohnemus <rick@sparky.IMD.Sterling.COM>, 
-.nf
-.nr
-Mike Peterson <root@alchemy.chem.utoronto.ca> and
-.nf
-.nr
-Ivan Fris <neumann.une.oz.au!ivan> 
-.nf
-.nf
-were a *great* help with this program at different stages 
-of its development...  Thanks!
+Jeff Minnig <jeff@dsndata.uucp> added the initial symbolic link support and
+ported lc to run in both domains on Sequent's Balance 8000.
+.PP
+Rick Ohnemus <rick@IMD.Sterling.COM> did major surgery to remove static 
+storage and *greatly* enhanced the link support. Thanks Rick!
+.PP
+Mike Peterson <root@alchemy.chem.utoronto.ca> ported lc to the Apollo Domain/OS SR10.2.
+.PP
+Ivan Fris <neumann.une.oz.au!ivan> added the ability to combine the "only" options.
+.PP
+Tim Goodwin <Tim.Goodwin@uknet.ac.uk> fixed a bug concerning unresolved 
+symbolic links specified on the command line. 
+.PP
+Jonathan Bayer <jbayer@ispi.com> added several features, including the 
+options -C -i -x -X and added spell checking to CDPATH usage.  Thanks Jonathan!

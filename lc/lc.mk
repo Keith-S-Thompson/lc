@@ -1,33 +1,25 @@
 #
-#    "@(#)lc.mk	1.6 9/7/90 - Kent Landfield (c) 1984,1985,1986,1987,1988,1989,1990
+#    "@(#)lc.mk	1.10 8/6/92 
+#
+#  Copyright (c) 1984, 1985, 1986, 1987, 1988, 1989, 1990,
+#                1991, 1992 by Kent Landfield.
 #
 # This makefile is used to compile lc. 
 #
-#      Initially designed on an IBM-XT running Coherent in 1984.
-#      Ported to XENIX on an IBM-AT in 1984.
-#      Ported to System V on AT&T 3Bs in 1985.
-#      Ported to DEC Vax 11/750 running System V in 1986.
-#      Ported to BSD4.2 on a Sequent Balance 8000 in 1986.
-#      Jeff Minnig added the initial support for links. 
-#      Ported to SunOS 4.0 on a Sun 3/60 in 1988.
-#      Rick Ohnemus did major surgery to remove static storage
-#      and *greatly* enhanced the link support. Thanks rick!
-#      Tested with Ultrix 3.0 & 3.1 on a DECstation 3100 in 1989.
-#      Tested with Ultrix 3.0 & 3.1 on a VAXstation 3500 in 1989.
-#      Ported to AIX 2.2 on an IBM RT.
-#      Tested with UTek on a Tektronix 4319 in 1989.
-#      Tested with IRIX System V on a Silicon Graphics Iris 4D/210GTX in 1989.
-#      Tested with AmigaDOS 1.3 on an Amiga 1000 in 1989.
-#      Tested with SunOS 4.0.3 on a Sparkstation 1 in 1989.
-#      Tested with UTek on a Tektronix XD8810 in 1989.
-#      Runs on AIX 3.+ on a Risc System/6000 in 1990. 
-#                                                               
 I =	/usr/include
 S = 	$(I)/sys
 #
 #  Have a favorite C compiler that is not cc... Too bad. ;-)
 CC=cc
 #CC=gcc
+#
+# Specify the multiple of 512 that your du(1) reports blocksizes System V 
+# du(1) gives the number of 512 byte blocks while BSD specifies kilobytes.
+#RPTSIZ = -DBLK_MULTIPLE=1
+RPTSIZ = -DBLK_MULTIPLE=2
+
+# If you want to specify the block size here uncomment the following line:
+#BLKSIZE = -DBLOCKSIZE=512
 #
 # If you are running on a BSD 4.2 box:
 # (note - if compiling on a sequent in att environment...`ucb make -f lc.mk`)
@@ -36,7 +28,9 @@ CC=cc
 #
 # If you are running on a BSD (4.3 or later), SunOS (4.0 or later),
 # or Ultrix (3.0 or later) box:
-FLAGS = -DBSD
+FLAGS = -DBSD -DLENS
+#
+# FLAGS = -DBSD
 #         or
 #
 # If you are running on an Ultrix box and using the POSIX environment:
@@ -48,7 +42,7 @@ FLAGS = -DBSD
 #         or
 #
 # If you are running System V or AIX 2.2:
-# FLAGS = 
+# FLAGS =  -DLENS
 #         or
 #
 # This runs on AIX but it does not lint well due to the include
@@ -101,14 +95,16 @@ MODE=755
 OWNER=bin
 GROUP=bin
 
-CFLAGS = $(OPTIM) $(FLAGS)
+CFLAGS = $(OPTIM) $(FLAGS) $(BLKSIZE) $(RPTSIZ)
+LINTFLAGS = $(FLAGS) $(BLKSIZE) $(RPTSIZ)
+SRCS = lc.c $(QSORTC)
 OBJS = lc.o $(QSORTO)
 
 lc: lc.o $(QSORTO)
 	$(CC) $(CFLAGS) lc.o $(QSORTO) -o lc $(LDFLAGS)
 
 lint:
-	lint $(FLAGS) $(QSORTC) lc.c
+	lint $(LINTFLAGS) $(SRCS)
 
 clean:
 	rm -f $(OBJS)
@@ -122,3 +118,22 @@ install: lc
 	chmod $(MODE)  $(BINDIR)/lc
 	chown $(OWNER) $(BINDIR)/lc
 	chgrp $(GROUP) $(BINDIR)/lc
+
+print:
+	cprint MANIFEST  | lpr -Plw
+	cprint README    | lpr -Plw
+	cprint lc.1      | lpr -Plw
+	cprint lc.c      | lpr -Plw
+	cprint lc.mk     | lpr -Plw
+	cprint qsort.c   | lpr -Plw
+
+# CodeCenter lines
+
+lc_src: $(SRCS)
+	#load $(CFLAGS) $(SRCS)
+
+# Purify lines
+
+purify: lc.o $(QSORTO)
+	purify $(CC) $(CFLAGS) lc.o $(QSORTO) -o lc $(LDFLAGS)
+

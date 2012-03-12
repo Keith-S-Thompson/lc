@@ -2,7 +2,7 @@
 ** This software is 
 **
 ** Copyright (c) 1984, 1985, 1986, 1987, 1988, 1989, 1990,
-**               1991 by Kent Landfield.
+**               1991, 1992 by Kent Landfield.
 **
 ** Permission is hereby granted to copy, distribute or otherwise 
 ** use any part of this package as long as you do not try to make 
@@ -21,7 +21,7 @@
 **  all ideas to me. Thanks!
 **
 **              Kent Landfield
-**              kent@sparky.IMD.Sterling.COM
+**              kent@sterling.com
 **              sparky!kent
 **
 **  Subsystem:   lc - List Columnwise/Categories
@@ -33,52 +33,37 @@
 **  Options:
 **               -a      List dot files as well.
 **               -b      List block special files only
+** JB            -B      Display the size in blocks
 **               -c      List character special files only
+** JB            -C      Sort down the columns instead of across
 **               -d      List directories only
 **               -D      Do not display singular files
 **               -e      Mark executable files with '*'
 **               -f      List regular files only
 **               -F      List fifo files only
-**               -1      List files one per line instead of in columns
-**               -r      Do not sort the filenames before displaying.
-**               -m      List shared memory name space entry files only
-**               -M      List semaphore name space entry files only
-**               -S      List socket file only
-**               -s      List symbolic links only
+** JB            -i      Display the inode number
+**               -I      Suppress unresolved symbolic link messages.
 **               -L      Display symbolic links
 **               -l      Mark symbolic links with '@'
-**               -I      Suppress unresolved symbolic link messages.
+**               -m      List shared memory name space entry files only
+**               -M      List semaphore name space entry files only
+**               -r      Do not sort the filenames before displaying.
+**               -S      List socket file only
+**               -s      List symbolic links only
+**               -v      Print the version of lc 
+** JB            -x      Only display those files the user owns or has access to
+** JB            -X      Only display those files the user does not own and
+**                       does not have access to.
+**               -1      List files one per line instead of in columns
 **
 ** The "only" options can be combined.
 ** If there is no 'directory' specified, the current directory is used.
 ** Not all options are supported on every system. (e.g. no symbolic links
 ** on your system ? Options -s, -L or -l won't be available..)
 **
-**  History:
-**      This implementation initially designed on an 
-**           IBM-XT running Coherent in 1984.
-**      Ported to XENIX on an IBM-AT in 1984.
-**      Ported to System V on AT&T 3Bs in 1985.
-**      Ported to DEC Vax 11/750 running System V in 1986.
-**      Ported to BSD4.2 on a Sequent Balance 8000 in 1986.
-**      Jeff Minnig added the initial support for links. 
-**      Ported to SunOS 4.0 on a Sun 3/60 in 1988.
-**      Rick Ohnemus did major surgery to remove static storage
-**      and *greatly* enhanced the link support. Thanks rick!
-**      Tested with Ultrix 3.0 & 3.1 on a DECstation 3100 in 1989.
-**      Tested with Ultrix 3.0 & 3.1 on a VAXstation 3500 in 1989.
-**      Tested with UTek on a Tektronix 4319 in 1989.
-**      Tested with IRIX System V on a Silicon Graphics Iris 4D/210GTX in 1989.
-**      Tested with AmigaDOS 1.3 on an Amiga 1000 in 1989.
-**      Tested with SunOS 4.0.3 on a Sparkstation 1 in 1989.
-**      Tested with AIX 3.+ on a Risc System/6000 in 1990. 
-**      Ivan Fris added the ability to combine "only" options in 1990.
-**      Mike Peterson ported it to the Apollo Domain/OS SR10.2 in 1990.
-**                                                               
 */
-#ifndef lint
-static char *sccsid = "@(#)lc.c	1.26 2/3/91  Kent Landfield";
-#endif
+static char *sccsid = "@(#)lc.c	1.34 8/7/92  Kent Landfield";
+#include "patchlevel.h"
 
 #include <stdio.h>
 #ifdef BSD
@@ -176,6 +161,9 @@ static char *sccsid = "@(#)lc.c	1.26 2/3/91  Kent Landfield";
 #  define strchr        index
 #endif
 
+/*
+** File name storage structure
+*/
 
 struct list {
     int num;
@@ -185,6 +173,10 @@ struct list {
     int maxlen;
 #endif
 };
+
+/*
+** File name storage arrays
+*/
 
 #ifdef LENS
 
@@ -256,18 +248,26 @@ struct list Sems = { 0, 0, (char **) NULL };
 
 char *Progname;
 
-int Allfiles = FALSE;
-int Display_single = TRUE;
-int Executables = FALSE;
-int Ignore = FALSE;
-int Level = 0;
-int Maxlen = 0;
-int Only = FALSE;
-int Screen_width = 80;
-int Single = FALSE;
+int Allfiles = FALSE;       /* display '.' files as well    */
+int Display_single = TRUE;  
+int Executables = FALSE;    /* mark executable files        */
+int Level = 0;              
+int Maxlen = 0;             /* longest filename in category */
+int Only = FALSE;           /* limit display to types       */
+int Screen_width = 80;      /* display width 80/132         */
+int Single = FALSE;         /* display files one per line   */
 int Sort_wanted = TRUE;
+int Sort_down = FALSE;      /* sort by columns */
+int Display_inode = FALSE;  /* inode/file size */
+int Display_size = FALSE;   /* inode/file size */
+int Sort_offset = 0;        /* inode/file size */
+int Display_accessable = 0; /* accessable files */
+
+#define ACCESSABLE_ONLY    1
+#define INACCESSABLE_ONLY  2
 
 #ifdef S_IFLNK
+int Ignore = FALSE;         /* ignore unresolved errors   */
 int Current = 0;
 int Disp_links = FALSE;
 int Mark_links = FALSE;
@@ -278,14 +278,20 @@ int readlink();
 #ifndef _BSD
 # ifdef BSD
     extern char *sprintf();
-    extern int  exit();
     extern int  free();
     extern int  qsort();
+    extern int  getuid();
+    extern int  getgid();
+    extern int  geteuid();
+    extern int  getegid();
 # else
     extern int  sprintf();
-    extern void exit();
     extern void free();
     extern void qsort();
+    extern uid_t getuid();
+    extern uid_t geteuid();
+    extern gid_t getgid();
+    extern gid_t getegid();
 # endif
  extern int fprintf();
  extern int printf();
@@ -301,6 +307,7 @@ extern int access();
 extern int fputs();
 extern int puts();
 extern int stat();
+extern void exit();
 
 /* S T R _ S A V  
  *
@@ -460,9 +467,10 @@ int print_line(files, ind)
     int ind;
 {
     register char *frmt;
-    char out_str[PATH_MAX + 3];
+    char out_str[PATH_MAX + 5];
     int i;
     int prt_limit;
+    int numrows = 0;
 
     if (Single) {
 #ifdef S_IFLNK
@@ -492,6 +500,17 @@ int print_line(files, ind)
         /* The prt_limit may need to be smarter */
 
          prt_limit = (Screen_width - 4) / (Maxlen + 1);
+
+         /*  sort by columns */
+#ifdef LNK_ONLY
+         if (Sort_down && Current != LNK_ONLY) {
+#else       
+         if (Sort_down) {
+#endif
+             numrows = (int)( (float)files->num / (float)prt_limit + 1.0);
+             prt_limit = (int) ( (float)files->num / (float)numrows + (float)(numrows - 1) / (float)numrows);
+         }
+
          if (Maxlen == 3 || Maxlen == 1)
              prt_limit--;
 
@@ -506,7 +525,14 @@ int print_line(files, ind)
                        *frmt++ = *(*(files->names + ind) + i);
                    i++;
               } while (i <= Maxlen);
-              ind++;
+#ifdef LNK_ONLY
+              if (Sort_down && Current != LNK_ONLY)
+#else       
+              if (Sort_down)
+#endif
+                 ind += numrows;
+              else
+                 ind++;
          }
          *frmt = '\0';
          while (*--frmt == ' ')  /* strip trailing blanks */
@@ -527,7 +553,9 @@ int str_cmp(s1, s2)
     char **s1;
     char **s2;
 {
-    return strcmp(*s1, *s2);
+    /* inode/file sizes */
+ 
+    return strcmp(&**s1 + Sort_offset, &**s2 + Sort_offset);
 }
 
 /* P R _ I N F O
@@ -564,15 +592,33 @@ int pr_info(strng, files, flg, sort_needed)
 #endif
 
     if (sort_needed)
-        qsort((char *) (files->names), files->num,
-              sizeof(char *), str_cmp);
+        qsort((char *) (files->names), files->num, sizeof(char *), str_cmp);
 
-    do {
-        pnum = print_line(files, pnum);
-    } while (pnum < files->num);
-
+    /* sort by columns */
+    Maxlen++; /* this is to force an extra space between columns */
+#ifdef LNK_ONLY
+    if (Sort_down && Current != LNK_ONLY) {
+#else
+    if (Sort_down) {
+#endif
+        int numcols = (Screen_width - 4) / (Maxlen + 1);
+        int numrows = (int)( (float)files->num / (float)numcols + 1.0);
+         
+        numcols = (int) ( (float)files->num / (float)numrows + (float)(numrows - 1) / (float)numrows);
+ 
+        do {
+                (void) print_line(files, pnum);
+                pnum++;
+        } while (pnum < numrows);
+    }    
+    else {
+        do {
+            pnum = print_line(files, pnum);
+        } while (pnum < files->num);
+    }    
     return (1);
 }
+
 
 /* P R I N T _ I N F O
  *
@@ -593,8 +639,13 @@ void print_info()
         ssing = Single;
         Single = TRUE;
         Current = LNK_ONLY;
+#ifdef NOTDEF
         flag = pr_info("Symbolic Links: ", &Lnks, flag, 0);
+#else
+        flag = pr_info("Symbolic Links: ", &Lnks, flag, Sort_wanted);
+#endif
         Single = ssing;
+        Current = 0;
     }
 #endif
 
@@ -718,9 +769,11 @@ void lc(name, cnt)
 #ifdef S_IFLNK
     char *link;
 #endif
-    char sav_str[BUFSIZE + 2];
+    char sav_str[BUFSIZE + 2 + 10]; /* inode/file size */
+    char tmp[BUFSIZE + 2 + 10];     /* inode/file size */
     int mlen;
     struct stat sbuf;
+    int display = TRUE;             /* access */
 
 #ifdef S_IFLNK
     if (lstat(name, &sbuf) < 0) {
@@ -734,7 +787,93 @@ void lc(name, cnt)
     }
 #endif
 
+    /*
+    ** Only list files the user owns or has access to.
+    */
+
+    if (Display_accessable &&
+        Display_accessable != (ACCESSABLE_ONLY | INACCESSABLE_ONLY)) {   
+        static int first = 1;
+        static int uid;
+        static int euid;
+        static int gid;
+        static int egid;
+
+        if (first) {
+            first = 0;
+            uid = getuid();
+            euid = geteuid();
+            gid = getgid();
+            egid = getegid();
+        }
+        if (uid != sbuf.st_uid && euid != sbuf.st_uid &&
+            gid != sbuf.st_gid && egid != sbuf.st_gid &&
+            ((sbuf.st_mode & 0007) == 0) ) {
+            if (Display_accessable & ACCESSABLE_ONLY)
+                return;
+        }
+        else {
+            if ((Display_accessable & INACCESSABLE_ONLY) &&
+                    (sbuf.st_mode & S_IFMT) != S_IFDIR
+#ifdef S_IFLNK
+                 && (sbuf.st_mode & S_IFMT) != S_IFLNK
+#endif
+                                                        )
+                return;
+            if ((Display_accessable & INACCESSABLE_ONLY)
+#ifdef S_IFLNK
+                 && (sbuf.st_mode & S_IFMT) == S_IFLNK
+#endif
+                                                           )
+                display = FALSE;
+        }
+    }
+
     basename(name, sav_str);
+
+    /* inode/file size */
+ 
+    *tmp = 0;
+    if (Display_inode) 
+        (void) sprintf(tmp, "%5d", sbuf.st_ino);
+    
+    if (Display_size) {
+        /* Make our best guess here for the block size.  Allow the user */
+        /* compiling the program to override any system constant by     */
+        /* specifying the blocksize on the command line.   JB           */
+ 
+#ifdef BLOCKSIZE
+        long st_blocks = (BLOCKSIZE - 1 + sbuf.st_size) / BLOCKSIZE;
+#else
+# ifdef BSD
+        long st_blocks = sbuf.st_blocks / BLK_MULTIPLE;
+# else    
+#  ifdef STD_BLK
+        long st_blocks = (STD_BLK - 1 + sbuf.st_size) / STD_BLK;
+#  else
+#   ifdef BUFSIZ
+        long st_blocks = (BUFSIZ - 1 + sbuf.st_size) / BUFSIZ;
+#   else
+        long st_blocks = (511 + sbuf.st_size) / 512;
+#   endif
+#  endif
+# endif
+#endif
+
+        if (*tmp)
+            (void) sprintf(&tmp[strlen(tmp)], " %4d", st_blocks);
+        else    
+            (void) sprintf(tmp, "%4d", st_blocks);
+ 
+    }
+    if (*tmp) {
+        Sort_offset = strlen(tmp) + 1;
+        (void) sprintf(&tmp[strlen(tmp)], " %s", sav_str);
+    }
+    else
+        (void) sprintf(tmp, "%s", sav_str);
+    (void) strcpy(sav_str, tmp);
+ 
     mlen = strlen(sav_str);
 
 #ifndef LENS
@@ -824,13 +963,15 @@ void lc(name, cnt)
     case S_IFLNK:
         if (!Allfiles && sav_str[0] == '.')
             break;
-        add_to_list(&Lnks, sav_str);
+        if (display)
+            add_to_list(&Lnks, sav_str);
         link = getlink(name);
-        add_to_list(&Lnksn, link);
+        if (display)
+            add_to_list(&Lnksn, link);
         if (link != (char *) NULL)
             free(link);
 #ifdef LENS
-        if (mlen > Lnks.maxlen)
+        if (mlen > Lnks.maxlen && display)
             Lnks.maxlen = mlen;
 #endif
         if (stat(name, &sbuf) < 0) {
@@ -840,7 +981,7 @@ void lc(name, cnt)
                                Progname, name);
         }
         else {
-            if (Mark_links) {
+            if (display && Mark_links) {
                 *(sav_str + mlen) = '@';
                 ++mlen;
                 *(sav_str + mlen) = '\0';
@@ -850,7 +991,8 @@ void lc(name, cnt)
 #endif
             }
 
-            switch (sbuf.st_mode & S_IFMT) {
+            if (display ||  (sbuf.st_mode & S_IFMT) == S_IFDIR)
+                switch (sbuf.st_mode & S_IFMT) {
 
             case S_IFDIR:
                 if (cnt != 1)        /*dont store the dir name on entry */
@@ -998,8 +1140,16 @@ void valid_opt(c, usage)
         Only |= BLOCK_ONLY;
         break;
 
+    case 'B':
+        Display_size = TRUE;
+        break;
+ 
     case 'c':
         Only |= CHAR_ONLY;
+        break;
+
+    case 'C':
+        Sort_down = TRUE;
         break;
 
     case 'd':
@@ -1018,10 +1168,6 @@ void valid_opt(c, usage)
         Only |= FILE_ONLY;
         break;
 
-    case 'r':
-        Sort_wanted = FALSE;
-        break;
-
 #ifndef apollo
 # ifdef S_IFIFO
     case 'F':
@@ -1030,8 +1176,8 @@ void valid_opt(c, usage)
 # endif
 #endif
 
-    case '1':
-        Single = TRUE;
+    case 'i':
+        Display_inode = TRUE;
         break;
 
 #ifdef S_IFLNK
@@ -1052,12 +1198,6 @@ void valid_opt(c, usage)
         break;
 #endif
 
-#ifdef S_IFSOCK
-    case 'S':
-        Only |= SOCK_ONLY;
-        break;
-#endif
-
 #ifdef S_IFNAM
     case 'm':
         Only |= SD_ONLY;
@@ -1067,6 +1207,34 @@ void valid_opt(c, usage)
         Only |= SEM_ONLY;
         break;
 #endif
+
+    case 'r':
+        Sort_wanted = FALSE;
+        break;
+
+#ifdef S_IFSOCK
+    case 'S':
+        Only |= SOCK_ONLY;
+        break;
+#endif
+
+    case '1':
+        Single = TRUE;
+        break;
+
+    case 'v':
+        (void) fprintf(stderr,"%s:\t%s\n\tRelease: %d\n\tPatch level: %d\n",
+                               Progname, sccsid, RELEASE, PATCHLEVEL);
+        exit(1);
+	/*NOTREACHED*/
+
+  case 'x':
+        Display_accessable += ACCESSABLE_ONLY;
+        break;
+ 
+    case 'X':
+        Display_accessable += INACCESSABLE_ONLY;
+        break;
 
     default:
         if (usage == TRUE) {
@@ -1080,8 +1248,8 @@ void valid_opt(c, usage)
             (void) strcat(up, "mM");
 #endif
             (void) fprintf(stderr,
-                           "usage: %s [-abcdDefF1%s] [directories or files]\n",
-                           Progname, up);
+                    "usage: %s [-abBcCdDefFivxX1%s] [directories or files]\n",
+                     Progname, up);
             exit(1);
         }
     }
@@ -1276,16 +1444,17 @@ int spname(oldname, newname)
 }
 
 /*  I N _ C D P A T H
- * 
+ *
  *  in_cdpath() searches the CDPATH stored in the environment
  *  for the filename specified. If it is found, fill the
  *  storage area refered to by buffer with the corrected path.
  *  Return TRUE if located and FALSE if not located in the CDPATH.
  */
-
-int in_cdpath(requested_dir, buffer)
+ 
+int in_cdpath(requested_dir, buffer, check_spelling)
     char *requested_dir;
     char *buffer;
+    int  check_spelling; 
 {
     static char *cdpath;
     static int first = 1;
@@ -1299,7 +1468,7 @@ int in_cdpath(requested_dir, buffer)
         if ((cdpath = getenv("CDPATH")) != (char *) NULL)
             cdpath = str_sav(cdpath);
         first = 0;
-    }
+    }   
 
     if (cdpath == (char *) NULL)
         return (0);
@@ -1315,19 +1484,29 @@ int in_cdpath(requested_dir, buffer)
             quit++;
         else
             *cp = '\0';
-
+ 
         if (*(path + 1) == '\0' && *path == '/')
             (void) sprintf(buffer, "/%s", requested_dir);
         else
             (void) sprintf(buffer, "%s/%s",
                            (*path ? path : "."), requested_dir);
-
-        if (access(buffer, 1) == 0)
+ 
+        if (access(buffer, 0) == 0)
             return (TRUE);
+ 
+        if (check_spelling)
+        {
+            char bfr[BUFSIZ + 1];
+            (void) strcpy(bfr, buffer);
+            if (spname(bfr, buffer) == 1)
+                return (TRUE);
+        }
+        
         path = ++cp;
     }
     return (FALSE);
 }
+
 
 /*  M A I N 
  * 
@@ -1341,6 +1520,7 @@ int main(argc, argv)
     char *argp;
 #ifdef S_IFLNK
     char *link;
+    int lnk_found;
 #endif
     char buf[BUFSIZE + 1];
     int idx;
@@ -1349,7 +1529,12 @@ int main(argc, argv)
 
     nl = idx = FALSE;
 
-    Progname = argv[0];
+    /* get the base name of the command */
+
+    if ((Progname = strrchr(argv[0], '/')) == (char *) NULL) 
+        Progname = argv[0];
+    else
+        ++Progname;
 
     set_env_vars();                       /* get environment variables */
 
@@ -1388,21 +1573,44 @@ int main(argc, argv)
         ++argv;
         (void) strcpy(buf, *argv);
 skipit:
+#ifdef S_IFLNK
+        lnk_found = 0;
+        if (lstat(buf, &sbuf) == -1) {
+            lnk_found = 1;
+#else
         if (stat(buf, &sbuf) == -1) {
-            if (in_cdpath(*argv, buf) || (spname(*argv, buf) != -1)) {
+#endif
+            if (in_cdpath(*argv, buf, FALSE) ||   /* Look for it in CDPATH */
+                (spname(*argv, buf) != -1)   ||   /* Look for it mispelled */
+                in_cdpath(*argv, buf, TRUE)) {    /* Mispelled in CDPATH ? */
                 /*
                  ** Check to see if the requested is in the CDPATH
-                 ** and if not try to correct for typos. Always print
+                 ** and if not try to correct for typos. If that fails
+                 ** then check for typos in the CDPOATH. Always print
                  ** the name of what was found...
                  */
+
                 nl = TRUE;
                 goto skipit;
             }
-            else
+#ifdef S_IFLNK
+            else if (lnk_found) 
+                (void) fprintf(stderr,"%s: %s: can't resolve symbolic link\n",
+                               Progname, *argv);
+#endif 
+            else 
                 (void)fprintf(stderr, "%s: can't find %s\n",
                               Progname, *argv);
         }
         else {
+#ifdef S_IFLNK
+            if ((sbuf.st_mode & S_IFMT) == S_IFLNK)
+                (void) stat(buf, &sbuf);
+            /*
+            ** No need to check return code here: if stat() fails use
+            ** the sbuf retrieved with lstat() earlier.
+            */
+#endif
             switch (sbuf.st_mode & S_IFMT) {
 
             case S_IFREG:
@@ -1444,13 +1652,11 @@ skipit:
             case S_IFLNK:
                 if (Display_single) {
                    if ((link = getlink(buf)) != (char *) NULL) {
-                       (void) printf("%s: symbolic link to %s\n",
-                                     buf, link);
+                       (void) printf("%s: symbolic link to %s\n", buf,link);
                        free(link);
                    }
                    else
-                       (void) printf("%s: unresolved symbolic link\n",
-                                     buf);
+                       (void) printf("%s: unresolved symbolic link\n", buf);
                 }
                 break;
 #endif
