@@ -17,7 +17,7 @@ the mangling that Google Groups does to e-mail addresses.
 
 To build:
 
-    cd lc
+    cd src
     make
 
 This will create the executable `lc`.  There is currently no
@@ -25,7 +25,8 @@ installation script.  Just copy the `lc` executable into a directory
 in your `$PATH`, and `lc.1` into the `man1` subdirectory of some
 directory in your `$MATHPATH`.
 
-This works on Ubuntu 11.04.
+I've *minimally* tested this (it builds and executes) on Ubuntu 11.04
+and Solaris 9.
 
 On Cygwin, the `curses.h` header is at `/usr/include/ncurses/curses.h`,
 not `/usr/include/curses.h`; you'll need to edit the `Makefile`
