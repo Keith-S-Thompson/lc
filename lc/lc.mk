@@ -1,5 +1,5 @@
 #
-#    "@(#)lc.mk	1.10 8/6/92 
+#    "@(#)lc.mk	1.11 8/20/92 
 #
 #  Copyright (c) 1984, 1985, 1986, 1987, 1988, 1989, 1990,
 #                1991, 1992 by Kent Landfield.
@@ -12,26 +12,36 @@ S = 	$(I)/sys
 #  Have a favorite C compiler that is not cc... Too bad. ;-)
 CC=cc
 #CC=gcc
-#
+
+# The number of columns displayed is be computed on a file type basis or by 
+# the length of the longest element in any type category. By defining the
+# LENS flag, the computation will be type independent.
+LENGTH=-DLENS
+
 # Specify the multiple of 512 that your du(1) reports blocksizes System V 
 # du(1) gives the number of 512 byte blocks while BSD specifies kilobytes.
 #RPTSIZ = -DBLK_MULTIPLE=1
 RPTSIZ = -DBLK_MULTIPLE=2
+#RPTSIZ = -DBLK_MULTIPLE=8
 
 # If you want to specify the block size here uncomment the following line:
 #BLKSIZE = -DBLOCKSIZE=512
-#
+
 # If you are running on a BSD 4.2 box:
 # (note - if compiling on a sequent in att environment...`ucb make -f lc.mk`)
 # FLAGS = -DBSD -DDIRECT
 #         or
 #
 # If you are running on a BSD (4.3 or later), SunOS (4.0 or later),
-# or Ultrix (3.0 or later) box:
-FLAGS = -DBSD -DLENS
-#
-# FLAGS = -DBSD
+# HPUX or Ultrix (3.0 or later) box:
+FLAGS = -DBSD
 #         or
+#
+# If you are running Silicon Graphics such as the SGI Personal Iris:
+# FLAGS = -DPOSIX -cckr
+#
+# If you are running on a Cray under CSOS: (and set RPTSIZ to 8)
+# FLAGS = -DPOSIX
 #
 # If you are running on an Ultrix box and using the POSIX environment:
 # FLAGS = -DPOSIX
@@ -52,7 +62,7 @@ FLAGS = -DBSD -DLENS
 #         or
 #
 # If you are running System V with Doug Gwyn's directory routines
-# or Silicon Graphics or Utek 3.2d:
+# or Utek 3.2d:
 # FLAGS = -DPOSIX
 # 
 #
@@ -67,17 +77,18 @@ OPTIM=-O
 # LDFLAGS = -lndir
 # LDFLAGS = -lc_s
 LDFLAGS = 
+
 #
 # 'qsort' function in C library
 # QSORTO =
 # QSORTC =
 #
-# 'qsort' function not in C library Or Your qsort library
+# 'qsort' function not in C library Or your qsort library
 # function is slooow.
 #
 # QSORTO = qsort.o
 # QSORTC = qsort.c
-#
+
 # Installation ownership and directory. Customize
 # for your installation. Warning, if you do not
 # install this on your root partition, it will
@@ -95,8 +106,8 @@ MODE=755
 OWNER=bin
 GROUP=bin
 
-CFLAGS = $(OPTIM) $(FLAGS) $(BLKSIZE) $(RPTSIZ)
-LINTFLAGS = $(FLAGS) $(BLKSIZE) $(RPTSIZ)
+CFLAGS = $(OPTIM) $(FLAGS) $(BLKSIZE) $(RPTSIZ) $(LENGTH)
+LINTFLAGS = $(FLAGS) $(BLKSIZE) $(RPTSIZ) $(LENGTH)
 SRCS = lc.c $(QSORTC)
 OBJS = lc.o $(QSORTO)
 

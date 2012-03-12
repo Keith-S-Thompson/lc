@@ -62,7 +62,7 @@
 ** on your system ? Options -s, -L or -l won't be available..)
 **
 */
-static char *sccsid = "@(#)lc.c	1.34 8/7/92  Kent Landfield";
+static char *sccsid = "@(#)lc.c	1.35 8/20/92 Kent Landfield";
 #include "patchlevel.h"
 
 #include <stdio.h>
@@ -285,17 +285,28 @@ int readlink();
     extern int  geteuid();
     extern int  getegid();
 # else
+#  ifndef _STDIO_H
     extern int  sprintf();
+#  endif
     extern void free();
     extern void qsort();
+#  ifdef SYSV
+    extern unsigned short getuid();
+    extern unsigned short geteuid();
+    extern unsigned short getgid();
+    extern unsigned short getegid();
+#  else /*!SYSV*/
     extern uid_t getuid();
     extern uid_t geteuid();
     extern gid_t getgid();
     extern gid_t getegid();
+#  endif
 # endif
+# ifndef _STDIO_H
  extern int fprintf();
  extern int printf();
  extern int sscanf();
+# endif
 #endif
 
 void lc();
@@ -502,7 +513,7 @@ int print_line(files, ind)
          prt_limit = (Screen_width - 4) / (Maxlen + 1);
 
          /*  sort by columns */
-#ifdef LNK_ONLY
+#ifdef S_IFLNK
          if (Sort_down && Current != LNK_ONLY) {
 #else       
          if (Sort_down) {
@@ -525,7 +536,7 @@ int print_line(files, ind)
                        *frmt++ = *(*(files->names + ind) + i);
                    i++;
               } while (i <= Maxlen);
-#ifdef LNK_ONLY
+#ifdef S_IFLNK
               if (Sort_down && Current != LNK_ONLY)
 #else       
               if (Sort_down)
@@ -596,7 +607,7 @@ int pr_info(strng, files, flg, sort_needed)
 
     /* sort by columns */
     Maxlen++; /* this is to force an extra space between columns */
-#ifdef LNK_ONLY
+#ifdef S_IFLNK
     if (Sort_down && Current != LNK_ONLY) {
 #else
     if (Sort_down) {
@@ -639,11 +650,7 @@ void print_info()
         ssing = Single;
         Single = TRUE;
         Current = LNK_ONLY;
-#ifdef NOTDEF
-        flag = pr_info("Symbolic Links: ", &Lnks, flag, 0);
-#else
-        flag = pr_info("Symbolic Links: ", &Lnks, flag, Sort_wanted);
-#endif
+        flag = pr_info("Symbolic Links: ", &Lnks, flag, FALSE);
         Single = ssing;
         Current = 0;
     }
@@ -1574,7 +1581,6 @@ int main(argc, argv)
         (void) strcpy(buf, *argv);
 skipit:
 #ifdef S_IFLNK
-        lnk_found = 0;
         if (lstat(buf, &sbuf) == -1) {
             lnk_found = 1;
 #else
@@ -1593,11 +1599,6 @@ skipit:
                 nl = TRUE;
                 goto skipit;
             }
-#ifdef S_IFLNK
-            else if (lnk_found) 
-                (void) fprintf(stderr,"%s: %s: can't resolve symbolic link\n",
-                               Progname, *argv);
-#endif 
             else 
                 (void)fprintf(stderr, "%s: can't find %s\n",
                               Progname, *argv);
