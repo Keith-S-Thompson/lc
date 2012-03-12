@@ -1293,7 +1293,7 @@ int get_win_cols()
        /* "Cannot find number of columns. " */
        return(0);
     }
-#endif TCAP
+#endif /* TCAP */
     return (co);
 }
 
