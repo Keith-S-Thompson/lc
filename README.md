@@ -25,4 +25,10 @@ installation script.  Just copy the `lc` executable into a directory
 in your `$PATH`, and `lc.1` into the `man1` subdirectory of some
 directory in your `$MATHPATH`.
 
+This works on Ubuntu 11.04.
+
+On Cygwin, the `curses.h` header is at `/usr/include/ncurses/curses.h`,
+not `/usr/include/curses.h`; you'll need to edit the `Makefile`
+(search for "Cygwin").  (**TODO:** Automate this.)
+
 -- Keith Thompson <Keith.S.Thompson@gmail.com> Sun 2012-03-11
