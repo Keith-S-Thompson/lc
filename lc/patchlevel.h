@@ -1,5 +1,5 @@
 /*
-**    @(#)patchlevel.h	1.2 8/19/92
+**    @(#)patchlevel.h	1.3 10/18/92
 */
 #define RELEASE 2
-#define PATCHLEVEL 1
+#define PATCHLEVEL 2

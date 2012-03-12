@@ -62,7 +62,7 @@
 ** on your system ? Options -s, -L or -l won't be available..)
 **
 */
-static char *sccsid = "@(#)lc.c	1.35 8/20/92 Kent Landfield";
+static char *sccsid = "@(#)lc.c	1.37 10/18/92 Kent Landfield";
 #include "patchlevel.h"
 
 #include <stdio.h>
@@ -114,8 +114,8 @@ static char *sccsid = "@(#)lc.c	1.35 8/20/92 Kent Landfield";
 #endif
 
 #define BUFSIZE         PATH_MAX
-
-#define NODES_PER_HUNK  256
+#define NODES_PER_HUNK       256
+#define DEFAULT_SCREEN_WIDTH  80
 
 #define TRUE            1
 #define FALSE           0
@@ -249,19 +249,19 @@ struct list Sems = { 0, 0, (char **) NULL };
 char *Progname;
 
 int Allfiles = FALSE;       /* display '.' files as well    */
-int Display_single = TRUE;  
+int Display_accessable = 0; /* display accessable files     */
+int Display_inode = FALSE;  /* Display inode number         */
+int Display_size = FALSE;   /* Display file size            */
+int Display_single = TRUE;  /* Display on file at a time    */
 int Executables = FALSE;    /* mark executable files        */
 int Level = 0;              
 int Maxlen = 0;             /* longest filename in category */
 int Only = FALSE;           /* limit display to types       */
-int Screen_width = 80;      /* display width 80/132         */
 int Single = FALSE;         /* display files one per line   */
-int Sort_wanted = TRUE;
-int Sort_down = FALSE;      /* sort by columns */
-int Display_inode = FALSE;  /* inode/file size */
-int Display_size = FALSE;   /* inode/file size */
-int Sort_offset = 0;        /* inode/file size */
-int Display_accessable = 0; /* accessable files */
+int Sort_wanted = TRUE;     /* display in directory order ? */
+int Sort_down = FALSE;      /* sort by columns              */
+int Sort_offset = 0;        
+int Screen_width;           /* display Screen width         */
 
 #define ACCESSABLE_ONLY    1
 #define INACCESSABLE_ONLY  2
@@ -1264,6 +1264,37 @@ void valid_opt(c, usage)
     return;
 }
 
+
+/* G E T _ W I N _ C O L S 
+ *  
+ * Get the number of columns in the current window.
+ */ 
+ 
+int get_win_cols() 
+{
+    int co = 0;
+#ifdef TCAP
+    char *term;
+    char entree[1024];
+  
+    if ((term = getenv("TERM")) == NULL) 
+        return(0);
+  
+    switch (tgetent(entree, term)) {
+       case -1: /* "Cannot open termcap database." */
+           return(0);
+       case 0: /* "Cannot find %s in termcap database." */
+           return(0);
+    }
+    if ((co = tgetnum("co")) == -1) {
+       /* "Cannot find number of columns. " */
+       return(0);
+    }
+#endif TCAP
+    return (co);
+}
+
+
 /* S E T _ E N V _ V A R S
  *
  * set_env_vars() is used get the environment variables that
@@ -1277,19 +1308,21 @@ void set_env_vars()
 {
     char *ep;
 
-    if ((ep = getenv("COLS")) != (char *) NULL) {
-        if (sscanf(ep, "%d", &Screen_width) == 0
-            || (Screen_width != 80 && Screen_width != 132))
-            Screen_width = 80;
+    if ((Screen_width = get_win_cols()) == 0) {
+        if ((ep = getenv("COLS")) != (char *) NULL) {
+           if (sscanf(ep, "%d", &Screen_width) == 0
+               || (Screen_width != 80 && Screen_width != 132))
+               Screen_width = DEFAULT_SCREEN_WIDTH;
+        }
+        else
+           Screen_width = DEFAULT_SCREEN_WIDTH;
     }
-
     if ((ep = getenv("LC")) != (char *) NULL) {
         while (*ep != '\0') {
             valid_opt(*ep, FALSE);
             ep++;
         }
     }
-
     return;
 }
 
@@ -1452,9 +1485,11 @@ int spname(oldname, newname)
 
 /*  I N _ C D P A T H
  *
- *  in_cdpath() searches the CDPATH stored in the environment
- *  for the filename specified. If it is found, fill the
- *  storage area refered to by buffer with the corrected path.
+ *  in_cdpath() searches $CDPATH variable stored in the sh/ksh/zsh environments
+ *  and searches $cdpath variable in the csh environment for the filename 
+ *  specified. If the filename is found, fill the storage area refered to 
+ *  by buffer with the corrected path.
+ *
  *  Return TRUE if located and FALSE if not located in the CDPATH.
  */
  
@@ -1464,6 +1499,7 @@ int in_cdpath(requested_dir, buffer, check_spelling)
     int  check_spelling; 
 {
     static char *cdpath;
+    static char cdsep;
     static int first = 1;
 
     char *cp;
@@ -1472,12 +1508,24 @@ int in_cdpath(requested_dir, buffer, check_spelling)
     int quit;
 
     if (first) {
-        if ((cdpath = getenv("CDPATH")) != (char *) NULL)
+        if ((cdpath = getenv("CDPATH")) != (char *) NULL) {
             cdpath = str_sav(cdpath);
+            cdsep = ':';
+        }
+        if (cdpath == (char *) NULL || *cdpath == '\0') {
+            /*
+            ** No sh $CDPATH, check if csh cdpath defined.
+            */
+            if ((cdpath = getenv("cdpath")) != (char *) NULL) {
+                cdpath = str_sav(cdpath);
+                cdsep = ' ';
+            }
+        }
         first = 0;
     }   
 
-    if (cdpath == (char *) NULL)
+
+    if (cdpath == (char *) NULL || *cdpath == '\0') 
         return (0);
 
     (void) strcpy(patbuf, cdpath);
@@ -1486,8 +1534,7 @@ int in_cdpath(requested_dir, buffer, check_spelling)
     quit = 0;
 
     while (!quit) {
-        cp = strchr(path, ':');
-        if (cp == (char *) NULL)
+        if ((cp = strchr(path, cdsep)) == (char *) NULL)
             quit++;
         else
             *cp = '\0';
@@ -1501,19 +1548,16 @@ int in_cdpath(requested_dir, buffer, check_spelling)
         if (access(buffer, 0) == 0)
             return (TRUE);
  
-        if (check_spelling)
-        {
+        if (check_spelling) {
             char bfr[BUFSIZ + 1];
             (void) strcpy(bfr, buffer);
             if (spname(bfr, buffer) == 1)
                 return (TRUE);
         }
-        
         path = ++cp;
     }
     return (FALSE);
 }
-
 
 /*  M A I N 
  * 

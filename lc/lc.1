@@ -1,4 +1,4 @@
-.\" @(#)lc.1	1.8 8/20/92 Kent Landfield;
+.\" @(#)lc.1	1.10 10/18/92 Kent Landfield;
 .TH LC 1 "Usenet Source"
 .SH NAME
 .B lc 
@@ -25,13 +25,14 @@ option can be used to print column-wise down the screen.
 .B lc
 uses the environment variables
 .B LC,
-.B CDPATH 
+.B CDPATH,
 and
-.B COLS 
-to allow you to set up a default set of display options that
+.B cdpath
+to allow you to set up default display options which are used by
 .B lc
-should use each time is it run. Options on the command line override
-options specified in the environment if there is a conflict.
+each time is it run. Options on the command line override
+options specified in the environment if there is a conflict. The
+environment variable 
 .B LC
 is used to set 
 .B lc
@@ -39,12 +40,34 @@ specific options. All command line options shown in the option list
 below can be used in setting default options within the environment 
 variable 
 .B LC.
-.B CDPATH 
-is searched for a file not found at the requested location or
-in the current directory. This is an extremely handy feature of 
-.B lc.
+Depending on how its compiled,
+.B lc
+determines the screen width automagically.  If your version was not compiled to use 
+termcap library routines, the environment variable
 .B COLS 
-is used to switch the column width between 80 and 132 column display.
+is used to set the screen width.  
+.B CDPATH
+and
+.B cdpath 
+are searched for a file or directory not found at the requested location or
+within the current directory. This is an extremely handy feature of 
+.B lc.
+The valid format of 
+.B CDPATH
+is that of the standard Bourne/Korn shell syntax of a colon separated list of 
+directories.  The syntax of 
+.B cdpath
+is that of the C shell, a blank separated list of directories.
+.B cdpath 
+must be set in the environment for it to be used by
+.B lc.
+In the event that both 
+.B CDPATH
+and 
+.B cdpath 
+are specified in the environment, the value of 
+.B CDPATH 
+is used.
 .PP
 .B lc 
 has incorporated the minimal the spell checking routines found in the book,
@@ -58,7 +81,7 @@ displayed on the same line. If the
 option is supplied in the environment or on the command line all 
 non-directory files are ignored.  If no file or directory is specified the 
 current working directory is listed by default.  The special entries
-``.'' and ``..'' are not listed.
+``.'' and ``..'' are never listed.
 .PP
 Not all options are supported on every system. (e.g. no symbolic links
 on your system ? Options 
@@ -95,7 +118,7 @@ Sort by column.
 List directories only.
 .IP "-D"
 Do not display singular files. If you do not use this option and
-execute "lc /unix", your output will be "/unix: file". This is 
+execute "lc /vmunix", your output will be "/vmunix: file". This is 
 useful in shell scripts but is sometimes annoying if you execute
 a command such as "lc /usr/lib/*" and all you wish to see is the
 first level of directories and not a lot of "filename: file" messages.
@@ -142,15 +165,16 @@ accessible by the user.
 Display those files which are inaccessible.  All directories will be
 displayed, thereby allowing the user to see unavailable files inside the
 directories.
-.SH DIAGNOSTICS
+.SH GENERAL
 .PP
 .B lc
 does not support recursion but I have never found this to
 be that necessary to put in. 
-.nr
-      $ find directory-to-descend -type d -print | xargs lc
-.nf
-works just fine when recursion is needed.
+.IP "$ find directory-to-descend -type d -print | xargs lc"
+.PP
+works just fine when recursion is needed.  If you only wish to 
+see one level down in the current directory structure try the following.
+.IP "$ lc -D *"
 .SH AUTHOR
 Kent Landfield <kent@sterling.com>
 .SH CREDITS

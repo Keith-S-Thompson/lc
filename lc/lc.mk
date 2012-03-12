@@ -1,5 +1,5 @@
 #
-#    "@(#)lc.mk	1.11 8/20/92 
+#    "@(#)lc.mk	1.13 10/18/92 
 #
 #  Copyright (c) 1984, 1985, 1986, 1987, 1988, 1989, 1990,
 #                1991, 1992 by Kent Landfield.
@@ -52,7 +52,7 @@ FLAGS = -DBSD
 #         or
 #
 # If you are running System V or AIX 2.2:
-# FLAGS =  -DLENS
+# FLAGS =  -DSYSV
 #         or
 #
 # This runs on AIX but it does not lint well due to the include
@@ -71,12 +71,21 @@ FLAGS = -DBSD
 #OPTIM=-O -Wall
 OPTIM=-O
 
+# If you wish to have LC to automagically adjust to the window size,
+# you need to define TCAP and specify the Termcap library containing 
+# the tgetent() and tgetnum() routines.
+#
+TCAP=-DTCAP
+#TERMLIB=-ltermcap
+#TERMLIB=-lcurses
+TERMLIB=-ltermlib
+
 # Are the directory routines in another library ?
 # Or do you wish to use shared libraries ?
 # Add additional libraries here...
-# LDFLAGS = -lndir
-# LDFLAGS = -lc_s
-LDFLAGS = 
+# LIBS = -lndir
+# LIBS = -lc_s
+LIBS =
 
 #
 # 'qsort' function in C library
@@ -102,12 +111,15 @@ LDFLAGS =
 # it matters...
 #
 BINDIR=/bin
+MANDIR=/usr/local/man/man1
+MANEXT=1
 MODE=755
 OWNER=bin
 GROUP=bin
+LDFLAGS = $(TERMLIB) $(LIBS)
 
-CFLAGS = $(OPTIM) $(FLAGS) $(BLKSIZE) $(RPTSIZ) $(LENGTH)
-LINTFLAGS = $(FLAGS) $(BLKSIZE) $(RPTSIZ) $(LENGTH)
+CFLAGS = $(OPTIM) $(FLAGS) $(BLKSIZE) $(RPTSIZ) $(LENGTH) $(TCAP)
+LINTFLAGS = $(FLAGS) $(BLKSIZE) $(RPTSIZ) $(LENGTH) $(TCAP)
 SRCS = lc.c $(QSORTC)
 OBJS = lc.o $(QSORTO)
 
@@ -123,12 +135,20 @@ clean:
 clobber: clean
 	rm -f lc
 
-install: lc
+install: lc 
 	strip lc
 	cp lc $(BINDIR)/lc
 	chmod $(MODE)  $(BINDIR)/lc
 	chown $(OWNER) $(BINDIR)/lc
 	chgrp $(GROUP) $(BINDIR)/lc
+
+man: $(MANDIR)/lc.$(MANEXT)
+
+$(MANDIR)/lc.$(MANEXT):	lc.1
+	cp lc.1 $(MANDIR)/lc.$(MANEXT)
+	chmod 444 $(MANDIR)/lc.$(MANEXT)
+	chown $(OWNER) $(MANDIR)/lc.$(MANEXT)
+	chgrp $(GROUP) $(MANDIR)/lc.$(MANEXT)
 
 print:
 	cprint MANIFEST  | lpr -Plw
