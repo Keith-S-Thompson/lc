@@ -58,3 +58,9 @@ History:
           added spell checking to the CDPATH.  Fantastic additions Jonathan!!
 
       - Scott Bolte ported it to a Cray running CSOS.  
+
+      2012:
+      =====
+      Keith Thompson grabbed the sources from comp.lang.misc,
+      modernized them so they'll build on more modern systems, and
+      made them available at <https://github.com/Keith-S-Thompson/lc>.
