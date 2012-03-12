@@ -1,7 +1,7 @@
 
 			LC
 
-		"@(#)README	1.4 1/8/91 Kent Landfield"
+		"@(#)README	1.5 2/3/91 Kent Landfield"
 
 This directory contains the source to lc. lc is much like the ls 
 command except it separates the types of files into groups and then
@@ -113,6 +113,15 @@ etc to
 INTERNET: kent@sparky.IMD.Sterling.COM or UUCP: uunet!sparky!kent
 
 so that I can continue to improve the functionality and portability of lc.
+
+Just a note for historical interest: David Tanguay of Software Development 
+Group, University of Waterloo informs me that LC stands for "list catalog".
+GCOS TSS on the Honeywell used the term "catalog", meaning (roughly) the
+same thing as a Unix directory. The GCOS file system maintenance program
+was called ACCE (short for access), a Swiss Army knife type program, and
+one of its sub-functions was LC, which gave the usual baroque display.
+A separate LC program was written to give the more commonly wanted structure
+info, and CLIS (for catalog listing) to give a more "ls -l" type of display.
 
 			-Kent+
 

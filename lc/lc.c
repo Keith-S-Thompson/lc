@@ -1,7 +1,8 @@
 /*
 ** This software is 
 **
-** Copyright (c) 1984, 1985, 1986, 1987, 1988, 1989, 1990 by Kent Landfield.
+** Copyright (c) 1984, 1985, 1986, 1987, 1988, 1989, 1990,
+**               1991 by Kent Landfield.
 **
 ** Permission is hereby granted to copy, distribute or otherwise 
 ** use any part of this package as long as you do not try to make 
@@ -54,7 +55,8 @@
 ** on your system ? Options -s, -L or -l won't be available..)
 **
 **  History:
-**      Initially designed on an IBM-XT running Coherent in 1984.
+**      This implementation initially designed on an 
+**           IBM-XT running Coherent in 1984.
 **      Ported to XENIX on an IBM-AT in 1984.
 **      Ported to System V on AT&T 3Bs in 1985.
 **      Ported to DEC Vax 11/750 running System V in 1986.
@@ -70,11 +72,12 @@
 **      Tested with AmigaDOS 1.3 on an Amiga 1000 in 1989.
 **      Tested with SunOS 4.0.3 on a Sparkstation 1 in 1989.
 **      Tested with AIX 3.+ on a Risc System/6000 in 1990. 
-**      Ivan Fris added the ability to combine "only" options.
+**      Ivan Fris added the ability to combine "only" options in 1990.
+**      Mike Peterson ported it to the Apollo Domain/OS SR10.2 in 1990.
 **                                                               
 */
 #ifndef lint
-static char *sccsid = "@(#)lc.c	1.25 1/2/91  Kent Landfield";
+static char *sccsid = "@(#)lc.c	1.26 2/3/91  Kent Landfield";
 #endif
 
 #include <stdio.h>
@@ -152,8 +155,10 @@ static char *sccsid = "@(#)lc.c	1.25 1/2/91  Kent Landfield";
 #ifdef S_IFBLK
 #  define BLOCK_ONLY    1<<4
 #endif
-#ifdef S_IFIFO
+#ifndef apollo
+# ifdef S_IFIFO
 #  define FIFO_ONLY     1<<5
+# endif
 #endif
 #ifdef S_IFLNK
 #  define LNK_ONLY      1<<6
@@ -194,8 +199,10 @@ struct list Chrs = { 0, 0, (char **) NULL, 0 };
 struct list Dirs = { 0, 0, (char **) NULL, 0 };
 struct list Fls = { 0, 0, (char **) NULL, 0 };
 
+#ifndef apollo
 #ifdef S_IFIFO
 struct list Fifos = { 0, 0, (char **) NULL, 0 };
+#endif
 #endif
 
 #ifdef S_IFLNK
@@ -225,8 +232,10 @@ struct list Chrs = { 0, 0, (char **) NULL };
 struct list Dirs = { 0, 0, (char **) NULL };
 struct list Fls = { 0, 0, (char **) NULL };
 
+#ifndef apollo
 #ifdef S_IFIFO
 struct list Fifos = { 0, 0, (char **) NULL };
+#endif
 #endif
 
 #ifdef S_IFLNK
@@ -602,9 +611,11 @@ void print_info()
         flag = pr_info("Shared Data Files: ", &Sds, flag, Sort_wanted);
 #endif
 
-#ifdef S_IFIFO
+#ifndef apollo
+# ifdef S_IFIFO
     if (Fifos.num > 0 && (Only == 0 || Only & FIFO_ONLY))
         flag = pr_info("Fifo Files: ", &Fifos, flag, Sort_wanted);
+# endif
 #endif
 
 #ifdef S_IFCHR
@@ -795,6 +806,7 @@ void lc(name, cnt)
         break;
 #endif
 
+#ifndef apollo
 #ifdef S_IFIFO
     case S_IFIFO:
         if (!Allfiles && sav_str[0] == '.')
@@ -805,6 +817,7 @@ void lc(name, cnt)
             Fifos.maxlen = mlen;
 #endif
         break;
+#endif
 #endif
 
 #ifdef S_IFLNK
@@ -890,6 +903,7 @@ void lc(name, cnt)
                 break;
 #endif
 
+#ifndef apollo
 #ifdef S_IFIFO
             case S_IFIFO:
                 add_to_list(&Fifos, sav_str);
@@ -898,6 +912,7 @@ void lc(name, cnt)
                     Fifos.maxlen = mlen;
 #endif
                 break;
+#endif
 #endif
 
 #ifdef S_IFSOCK
@@ -1007,10 +1022,12 @@ void valid_opt(c, usage)
         Sort_wanted = FALSE;
         break;
 
-#ifdef S_IFIFO
+#ifndef apollo
+# ifdef S_IFIFO
     case 'F':
         Only |= FIFO_ONLY;
         break;
+# endif
 #endif
 
     case '1':
@@ -1407,11 +1424,13 @@ skipit:
                 break;
 #endif
 
+#ifndef apollo
 #ifdef S_IFIFO
             case S_IFIFO:
                 if (Display_single)
                    (void) printf("%s: fifo file\n", buf);
                 break;
+#endif
 #endif
 
 #ifdef S_IFSOCK
@@ -1468,10 +1487,12 @@ skipit:
                 Dirs.maxlen = Fls.maxlen = 0;
 #endif
 
+#ifndef apollo
 #ifdef S_IFIFO
                 Fifos.num = 0;
 #ifdef LENS
                 Fifos.maxlen = 0;
+#endif
 #endif
 #endif
 
