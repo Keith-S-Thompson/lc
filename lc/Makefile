@@ -27,7 +27,11 @@ RPTSIZ = -DBLK_MULTIPLE=2
 # If you want to specify the block size here uncomment the following line:
 #BLKSIZE = -DBLOCKSIZE=512
 
+# For most Unix-like systems:
 FLAGS = -DPOSIX
+
+# For Cygwin or other systems where curses.h -s under /usr/include/ncurses:
+# FLAGS = -DPOSIX -I/usr/include/ncurses
 
 # If you are running on a BSD 4.2 box:
 # (note - if compiling on a sequent in att environment...`ucb make -f lc.mk`)
