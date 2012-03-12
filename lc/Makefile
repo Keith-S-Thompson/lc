@@ -132,7 +132,7 @@ lint:
 	lint $(LINTFLAGS) $(SRCS)
 
 clean:
-	rm -f $(OBJS)
+	rm -f $(OBJS) lc
 
 clobber: clean
 	rm -f lc
