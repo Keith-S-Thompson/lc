@@ -121,8 +121,12 @@ static char *sccsid = "@(#)lc.c	1.37 10/18/92 Kent Landfield";
 #define NODES_PER_HUNK       256
 #define DEFAULT_SCREEN_WIDTH  80
 
+#ifndef TRUE
 #define TRUE            1
+#endif
+#ifdef FALSE
 #define FALSE           0
+#endif
 
 #ifndef S_IXUSR
 #  define S_IXUSR       S_IEXEC
