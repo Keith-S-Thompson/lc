@@ -1,0 +1,147 @@
+.\" @(#)lc.1	1.1 9/7/90 Kent Landfield;
+.TH LC 1 "Usenet Source"
+.SH NAME
+.B lc 
+\- categorize and list directory and file names in columns
+.SH SYNOPSIS
+.B lc
+[
+.B \-abcdDefFIlLmMrsS1
+]
+[ directory ... ]
+.SH DESCRIPTION
+.B lc
+lists the elements of the given directories.  The elements are
+divided into minimally five basic types (files, directories, 
+character special files, block special files, and fifos) and 
+are printed in alphabetical order.  They are normally printed 
+column-wise across the screen, preceded by a title indicating
+the type. The
+.B \-1
+option can be used to force single-column untitled output.
+.PP
+.B lc
+uses the environment variables
+.B LC
+,
+.B CDPATH 
+and
+.B COLS 
+to allow you to set up a default set of display options that
+.B lc
+should use each time is it run. Options on the command line override
+options specified in the environment if there is a conflict.
+.B LC
+is used to set 
+.B lc
+specific options. All command line options shown in the option list 
+below can be used in setting default options within the environment 
+variable 
+.B LC.
+.B CDPATH 
+is searched for a file not found at the requested location or
+in the current directory. This is an extremely handy feature of 
+.B lc.
+.B COLS 
+is used to switch the column width between 80 and 132 column display.
+.PP
+.B lc 
+has incorporated the minimal the spell checking routines found in the book,
+The UNIX Programming Environment, by Brian Kernighan and Rob Pike.  
+.PP
+If the command line argument list contains more than one name, the 
+contents of the directories named in the list are displayed and all 
+other names are displayed one per line with the type of the file 
+displayed on the same line. If the 
+.B -D 
+option is supplied in the environment or on the command line all 
+non-directory files are ignored.  If no file or directory is specified the 
+current working directory is listed by default.  The special entries
+``.'' and ``..'' are not listed.
+.PP
+Not all options are supported on every system. (e.g. no symbolic links
+on your system ? Options 
+.B -s, -I -L
+or 
+.B -l
+won't be available...) On systems which support symbolic links, 
+the symbolic links are normally followed, and each prints under 
+the category of the type of file to which it is linked.  If the 
+symbolic link points to a nonexistent path name, or if you do not 
+have permission to resolve the path name,
+.B lc
+prints out an error message indicating it cannot resolve the link.
+This type of message can be suppressed through the use of the 
+.B 'I'
+option described below.
+.SH OPTIONS
+.IP "-a" 6
+List dot files as well. Normally 
+.B lc 
+does not display files beginning with a '.' unless this option is 
+specified. The system '.' and '.. files are never displayed since
+they give you no real additional information and would just clutter
+up the display.
+.IP "-b"
+List block special files only.
+.IP "-c"
+List character special files only.
+.IP "-d"
+List directories only.
+.IP "-D"
+Do not display singular files. If you do not use this option and
+execute "lc /unix", your output will be "/unix: file". This is 
+useful in shell scripts but is sometimes annoying if you execute
+a command such as "lc /usr/lib/*" and all you wish to see is the
+first level of directories and not a lot of "filename: file" messages.
+.IP "-e"
+Mark executable files with '*'. This options allows you to have executables
+displayed with a '*' appended to the end of the file name.
+.IP "-f"
+List regular files only.
+.IP "-F"
+List fifo files only.
+.IP "-I"
+Do not report unresolved symbolic link messages. Normally
+.B lc
+prints out a message stating that it cannot resolve the symbolic link.
+Use of this option suppresses the display of those messages.
+.IP "-l"
+Mark symbolic links with '@'. This options allows you to have symbolic
+links displayed with a '@' appended to the end of the file name.
+.IP "-L"
+Display symbolic links. This options allows you to have 
+.B lc
+output a display showing what files the symbolic links refer to.
+.IP "-m"
+List shared memory name space entry files only.
+.IP "-M"
+List semaphore name space entry files only.
+.IP "-r"
+List the directory entries as they appear in the directory file. No 
+sorting of output prior to displaying.
+.IP "-s"
+List symbolic links only.
+.IP "-S"
+List AF_UNIX socket files only.
+.IP "-1"
+List files one per line instead of in columns.
+.SH DIAGNOSTICS
+The "only" options can not be combined at this time.
+.PP
+The spell checking does not work when the CDPATH is searched for a
+file or directory not found in the current directory.
+.PP
+.B lc
+does not support recursion but I have never found this to
+be that necessary to put in. 
+.nr
+      $ find directory-to-descend -type d -print | xargs lc
+.nf
+works just fine when recursion is needed.
+.SH AUTHOR
+Kent Landfield <kent@sparky.IMD.Sterling.COM>
+.SH CREDITS
+Jeff Minnig <jeff@dsndata> and Rick Ohnemus <rick@sparky.IMD.Sterling.COM> 
+were a *great* help with this program at different stages of its development...
+Thanks!

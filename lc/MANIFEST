@@ -1,0 +1,8 @@
+   File Name		Archive #	Description
+----------------------------------------------------------
+ README                     1	General information file.
+ MANIFEST                   1	This shipping list
+ lc.1                       2	lc manual page in nroff format.
+ lc.c                       1	Source to the lc command.
+ lc.mk                      1	Makefile for the lc command.
+ qsort.c                    1	BSD libc.a qsort source (optional)
