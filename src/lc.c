@@ -124,7 +124,7 @@ static char *sccsid = "@(#)lc.c	1.37 10/18/92 Kent Landfield";
 #ifndef TRUE
 #define TRUE            1
 #endif
-#ifdef FALSE
+#ifndef FALSE
 #define FALSE           0
 #endif
 
