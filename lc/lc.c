@@ -279,52 +279,7 @@ int lstat();
 int readlink();
 #endif
 
-#ifndef _BSD
-# ifdef BSD
-    extern char *sprintf();
-    extern int  free();
-    extern int  qsort();
-    extern int  getuid();
-    extern int  getgid();
-    extern int  geteuid();
-    extern int  getegid();
-# else
-#  ifndef _STDIO_H
-    extern int  sprintf();
-#  endif
-    extern void free();
-    extern void qsort();
-#  ifdef SYSV
-    extern unsigned short getuid();
-    extern unsigned short geteuid();
-    extern unsigned short getgid();
-    extern unsigned short getegid();
-#  else /*!SYSV*/
-    extern uid_t getuid();
-    extern uid_t geteuid();
-    extern gid_t getgid();
-    extern gid_t getegid();
-#  endif
-# endif
-# ifndef _STDIO_H
- extern int fprintf();
- extern int printf();
- extern int sscanf();
-# endif
-#endif
-
 void lc(char *name, int cnt);
-
-/* 
- * extern char *getenv();
- * extern char *malloc();
- * extern char *realloc();
- * extern int access();
- * extern int fputs();
- * extern int puts();
- * extern int stat();
- * extern void exit();
- */
 
 /* S T R _ S A V  
  *
