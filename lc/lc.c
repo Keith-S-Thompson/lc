@@ -313,7 +313,7 @@ int readlink();
 # endif
 #endif
 
-void lc();
+void lc(char *name, int cnt);
 
 /* 
  * extern char *getenv();
@@ -335,8 +335,7 @@ void lc();
  *   and terminates.
  */
 
-char *str_sav(s)
-    char *s;
+char *str_sav(char *s)
 {
     char *p;
 
@@ -354,8 +353,7 @@ char *str_sav(s)
  *  the filenames found to the routine lc();
  */
 #if (POSIX || BSD)
-void directory(dname)
-    char *dname;
+void directory(char *dname)
 {
     register char *nbp;
     register char *nep;
@@ -407,8 +405,7 @@ void directory(dname)
  *  directory() is used to open and read the directory and pass
  *  the filenames found to the routine lc();
  */
-void directory(dname)
-    char *dname;
+void directory(char *dname)
 {
     register char *nbp;
     register char *nep;
@@ -458,8 +455,7 @@ void directory(dname)
  */
 
 #ifdef S_IFLNK
-char *getlink(fn)
-    char *fn;
+char *getlink(char *fn)
 {
     char wk[PATH_MAX + 1];
     int rc;
@@ -479,9 +475,7 @@ char *getlink(fn)
  *  it is rather crude...
  */
 
-int print_line(files, ind)
-    struct list *files;
-    int ind;
+int print_line(struct list *files, int ind)
 {
     register char *frmt;
     char out_str[PATH_MAX + 5];
@@ -566,10 +560,10 @@ int print_line(files, ind)
  *  qsort(3) to order the filenames inplace.
  */
 
-int str_cmp(s1, s2)
-    char **s1;
-    char **s2;
+int str_cmp(const void *p1, const void *p2)
 {
+    const char *const *s1 = p1;
+    const char *const *s2 = p2;
     /* inode/file sizes */
  
     return strcmp(&**s1 + Sort_offset, &**s2 + Sort_offset);
@@ -582,11 +576,7 @@ int str_cmp(s1, s2)
  *  the data.`
  */
 
-int pr_info(strng, files, flg, sort_needed)
-    char *strng;
-    struct list *files;
-    int flg;
-    int sort_needed;
+int pr_info(char *strng, struct list *files, int flg, int sort_needed)
 {
     int pnum = 0;
 
@@ -775,9 +765,7 @@ void add_to_list(files, str)
  * the file refered to by name.
  */
 
-void lc(name, cnt)
-    char *name;
-    int cnt;
+void lc(char *name, int cnt)
 {
 #ifdef S_IFLNK
     char *link;
@@ -1135,9 +1123,7 @@ void lc(name, cnt)
  * prints a usage message for the user.
  */
 
-void valid_opt(c, usage)
-    char c;
-    int usage;
+void valid_opt(char c, int usage)
 {
     char up[7];
 
@@ -1276,7 +1262,7 @@ void valid_opt(c, usage)
  * Get the number of columns in the current window.
  */ 
  
-int get_win_cols() 
+int get_win_cols(void) 
 {
     int co = 0;
 #ifdef TCAP
@@ -1310,7 +1296,7 @@ int get_win_cols()
  * the environment.
  */
 
-void set_env_vars()
+void set_env_vars(void)
 {
     char *ep;
 
@@ -1342,9 +1328,7 @@ void set_env_vars()
  */
 #define EQ(s, t) (strcmp(s, t) == 0)
 
-int spdist(s, t)
-    char *s;
-    char *t;
+int spdist(char *s, char *t)
 {
     while (*s++ == *t) {
         if (*t++ == '\0')
@@ -1372,10 +1356,7 @@ int spdist(s, t)
  */
 
 #if (POSIX || BSD)
-int mindist(dir, guess, best)    /* set best, return distance 0..3 */
-    char *dir;
-    char *guess;
-    char *best;
+int mindist(char *dir, char *guess, char *best)    /* set best, return distance 0..3 */
 {
     DIR *dfd;
     int d;
@@ -1416,10 +1397,7 @@ int mindist(dir, guess, best)    /* set best, return distance 0..3 */
  *  in the event the requested file was not located.
  */
 
-int mindist(dir, guess, best)    /* set best, return distance 0..3 */
-    char *dir;
-    char *guess;
-    char *best;
+int mindist(char *dir, char *guess, char *best)    /* set best, return distance 0..3 */
 {
     FILE *fd;
     int d;
@@ -1460,9 +1438,7 @@ int mindist(dir, guess, best)    /* set best, return distance 0..3 */
  * stores corrected name in newname.
  */
 
-int spname(oldname, newname)
-    char *oldname;
-    char *newname;
+int spname(char *oldname, char *newname)
 {
     char *new = newname;
     char *old = oldname;
@@ -1499,10 +1475,7 @@ int spname(oldname, newname)
  *  Return TRUE if located and FALSE if not located in the CDPATH.
  */
  
-int in_cdpath(requested_dir, buffer, check_spelling)
-    char *requested_dir;
-    char *buffer;
-    int  check_spelling; 
+int in_cdpath(char *requested_dir, char *buffer, int check_spelling)
 {
     static char *cdpath;
     static char cdsep;
@@ -1570,9 +1543,7 @@ int in_cdpath(requested_dir, buffer, check_spelling)
  *  Ye olde main();
  */
 
-int main(argc, argv)
-    int argc;
-    char *argv[];
+int main(int argc, char *argv[])
 {
     char *argp;
 #ifdef S_IFLNK
