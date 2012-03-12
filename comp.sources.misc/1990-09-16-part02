@@ -1,17 +1,17 @@
 Path: gmdzi!unido!mcsun!uunet!allbery
-From: k...@sparky.IMD.Sterling.COM (Kent Landfield)
+From: kent@sparky.IMD.Sterling.COM (Kent Landfield)
 Newsgroups: comp.sources.misc
 Subject: v14i083: lc - Categorize and List Files In Columns, Part 2 of 2
 Message-ID: <104984@uunet.UU.NET>
 Date: 16 Sep 90 00:55:42 GMT
-Sender: allb...@uunet.UU.NET
+Sender: allbery@uunet.UU.NET
 Lines: 190
-Approved: allb...@uunet.UU.NET (Brandon S. Allbery - comp.sources.misc)
+Approved: allbery@uunet.UU.NET (Brandon S. Allbery - comp.sources.misc)
 Posted: Sun Sep 16 01:55:42 1990
 X-UNIX-From: ssbell!sparky!kent
 
 Posting-number: Volume 14, Issue 83
-Submitted-by: k...@sparky.IMD.Sterling.COM (Kent Landfield)
+Submitted-by: kent@sparky.IMD.Sterling.COM (Kent Landfield)
 Archive-name: lc/part02
 
 #! /bin/sh
@@ -19,7 +19,7 @@ Archive-name: lc/part02
 # into a shell via "sh file" or similar.  To overwrite existing files,
 # type "sh file -c".
 # The tool that generated this appeared in the comp.sources.unix newsgroup;
-# send mail to comp-sources-u...@uunet.uu.net if you want that tool.
+# send mail to comp-sources-unix@uunet.uu.net if you want that tool.
 # If this archive is complete, you will see the following message at the end:
 #		"End of archive 2 (of 2)."
 # Contents:  lc.1
@@ -172,9 +172,9 @@ X      $ find directory-to-descend -type d -print | xargs lc
 X.nf
 Xworks just fine when recursion is needed.
 X.SH AUTHOR
-XKent Landfield <k...@sparky.IMD.Sterling.COM>
+XKent Landfield <kent@sparky.IMD.Sterling.COM>
 X.SH CREDITS
-XJeff Minnig <jeff@dsndata> and Rick Ohnemus <r...@sparky.IMD.Sterling.COM> 
+XJeff Minnig <jeff@dsndata> and Rick Ohnemus <rick@sparky.IMD.Sterling.COM> 
 Xwere a *great* help with this program at different stages of its development...
 XThanks!
 END_OF_FILE

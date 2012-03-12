@@ -1,17 +1,17 @@
 Path: gmdzi!unido!mcsun!uunet!allbery
-From: k...@sparky.IMD.Sterling.COM (Kent Landfield)
+From: kent@sparky.IMD.Sterling.COM (Kent Landfield)
 Newsgroups: comp.sources.misc
 Subject: v14i082: lc - Categorize and List Files In Columns, Part 1 of 2
 Message-ID: <104983@uunet.UU.NET>
 Date: 16 Sep 90 00:55:15 GMT
-Sender: allb...@uunet.UU.NET
+Sender: allbery@uunet.UU.NET
 Lines: 2072
-Approved: allb...@uunet.UU.NET (Brandon S. Allbery - comp.sources.misc)
+Approved: allbery@uunet.UU.NET (Brandon S. Allbery - comp.sources.misc)
 Posted: Sun Sep 16 01:55:15 1990
 X-UNIX-From: ssbell!sparky!kent
 
 Posting-number: Volume 14, Issue 82
-Submitted-by: k...@sparky.IMD.Sterling.COM (Kent Landfield)
+Submitted-by: kent@sparky.IMD.Sterling.COM (Kent Landfield)
 Archive-name: lc/part01
 
 [It's decidedly difficult to gain access to one's uunet mailbox when one's
@@ -25,7 +25,7 @@ went faster than taking an entire week.  ++bsa]
 # into a shell via "sh file" or similar.  To overwrite existing files,
 # type "sh file -c".
 # The tool that generated this appeared in the comp.sources.unix newsgroup;
-# send mail to comp-sources-u...@uunet.uu.net if you want that tool.
+# send mail to comp-sources-unix@uunet.uu.net if you want that tool.
 # If this archive is complete, you will see the following message at the end:
 #		"End of archive 1 (of 2)."
 # Contents:  README MANIFEST lc.c lc.mk qsort.c
@@ -140,7 +140,7 @@ XIf you have a problem, there's someone else out there who either has
 Xhad or will have the same problem.  Please send all "lc" ideas, patches, 
 Xetc to 
 X
-XINTERNET: k...@sparky.IMD.Sterling.COM or UUCP: uunet!ssbell!sparky!kent
+XINTERNET: kent@sparky.IMD.Sterling.COM or UUCP: uunet!ssbell!sparky!kent
 X
 Xso that I can continue to improve the functionality and portability of lc.
 X
@@ -199,7 +199,7 @@ X**  email the changes, enhancements, bug fixes as well as any and
 X**  all ideas to me. Thanks!
 X**
 X**              Kent Landfield
-X**              k...@sparky.IMD.Sterling.COM
+X**              kent@sparky.IMD.Sterling.COM
 X**              sparky!kent
 X**
 X**  Subsystem:   lc - List Columnwise/Categories
