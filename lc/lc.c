@@ -77,6 +77,7 @@ static char *sccsid = "@(#)lc.c	1.37 10/18/92 Kent Landfield";
 #ifdef POSIX
 #  include <limits.h>
 #  include <dirent.h>
+#  include <stdlib.h>
 #else
 #  ifdef BSD
 #    ifdef DIRECT
@@ -311,14 +312,16 @@ int readlink();
 
 void lc();
 
-extern char *getenv();
-extern char *malloc();
-extern char *realloc();
-extern int access();
-extern int fputs();
-extern int puts();
-extern int stat();
-extern void exit();
+/* 
+ * extern char *getenv();
+ * extern char *malloc();
+ * extern char *realloc();
+ * extern int access();
+ * extern int fputs();
+ * extern int puts();
+ * extern int stat();
+ * extern void exit();
+ */
 
 /* S T R _ S A V  
  *
