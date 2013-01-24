@@ -25,11 +25,12 @@ installation script.  Just copy the `lc` executable into a directory
 in your `$PATH`, and `lc.1` into the `man1` subdirectory of some
 directory in your `$MATHPATH`.
 
-I've *minimally* tested this (it builds and executes) on Ubuntu 11.04
-and Solaris 9.
+I've *minimally* tested this (it builds and executes) on Ubuntu 11.04,
+Debian 6.06, and Solaris 9.  (On Solaris 9, it seems to assume that
+the maximum file name length is 14; I'll work on a fix for that.)
 
 On Cygwin, the `curses.h` header is at `/usr/include/ncurses/curses.h`,
 not `/usr/include/curses.h`; you'll need to edit the `Makefile`
 (search for "Cygwin").  (**TODO:** Automate this.)
 
--- Keith Thompson <Keith.S.Thompson@gmail.com> Sun 2012-03-11
+-- Keith Thompson <Keith.S.Thompson@gmail.com> Thu 2013-01-24
