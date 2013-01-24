@@ -279,8 +279,8 @@ int Ignore = FALSE;         /* ignore unresolved errors   */
 int Current = 0;
 int Disp_links = FALSE;
 int Mark_links = FALSE;
-int lstat();
-int readlink();
+/* int lstat(); */
+/* int readlink(); */
 #endif
 
 void lc(char *name, int cnt);
